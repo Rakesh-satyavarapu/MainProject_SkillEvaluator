@@ -3,7 +3,7 @@ let mongoose = require('mongoose');
 exports.connectDB = async()=>
     {
         try{
-            await mongoose.connect(`mongodb://localhost:27017/MainProjectDB`)
+            await mongoose.connect(process.env.MONGODB_URI)
             console.log('Database connected successfully');
             }
         catch(err)
