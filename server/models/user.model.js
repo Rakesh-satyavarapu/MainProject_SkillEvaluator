@@ -40,15 +40,15 @@ const userSchema = mongoose.Schema({
         enum: ["beginner", "intermediate", "advanced"],
         default: "beginner"
         },
-        tests:[{type: mongoose.Schema.Types.ObjectId, ref: 'Test'}],
-        score: { type: Number, default: 0 },
-        quizzesTaken: { type: Number, default: 0 },
-        correctAnswers: { type: Number, default: 0 },
-        totalQuestions: { type: Number, default: 0 },
+        tests:[{type: mongoose.Schema.Types.ObjectId, ref: 'Attempt'}],
+        // score: { type: Number, default: 0 },
+        // quizzesTaken: { type: Number, default: 0 },
+        // correctAnswers: { type: Number, default: 0 },
+        // totalQuestions: { type: Number, default: 0 },
         lastUpdated: { type: Date, default: Date.now }}]
 },
 {
     timestamps:true
 })
 
-module.exports = mongoose.model('user',userSchema)
+module.exports = mongoose.model('User',userSchema)

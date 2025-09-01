@@ -9,8 +9,8 @@ let skillSchema = mongoose.Schema({
     description:String, 
     registeredUsers:[{
         type:mongoose.Schema.Types.ObjectId,
-        ref:'user'
+        ref:'User'
     }]
 })
 
-module.exports = mongoose.model('skill',skillSchema)
+module.exports = mongoose.model('Skill',skillSchema)

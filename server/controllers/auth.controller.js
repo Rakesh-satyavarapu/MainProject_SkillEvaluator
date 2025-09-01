@@ -36,7 +36,7 @@ exports.login = async(req,res) =>{
         let user = await userSchema.findOne({email})
         if(user)
         {
-            let result = bcrypt.compare(password,user.password)
+            let result = await bcrypt.compare(password,user.password)
 
             if(result){
             let token = jwt.sign({id:user._id},process.env.SECRET,{expiresIn:'7d'})

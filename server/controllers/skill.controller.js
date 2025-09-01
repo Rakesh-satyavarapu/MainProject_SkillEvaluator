@@ -14,3 +14,14 @@ exports.addSkill = async (req, res) => {
         res.status(500).json({message: "Internal Server Error"});
     }
 }
+
+exports.getAllSkills = async (req, res) => {
+    try {
+        let skills = await skillSchema.find();
+        res.status(200).json({message: "Skills retrieved successfully", data: skills});
+    } catch (error) {
+        console.error("Error retrieving skills:", error);
+        res.status(500).json({message: "Internal Server Error"});
+    }
+}
+

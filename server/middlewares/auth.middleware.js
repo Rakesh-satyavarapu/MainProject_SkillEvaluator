@@ -9,10 +9,14 @@ try{
     {
         return res.status(401).json({msg:"user not logged in"})
     }
-    let decode = jwt.verify(token,process.env.SECRET)
-    if(!decode)
-    {
-        return res.status(401).json({msg:"un-authorized accessing"})
+    let decode;
+    try {
+      decode = jwt.verify(token, process.env.SECRET);
+    } catch (err) {
+      if (err.name === "TokenExpiredError") {
+        return res.status(401).json({ msg: "Session expired, please log in again" });
+      }
+      return res.status(401).json({ msg: "Invalid token" });
     }
     let user = await userSchema.findById(decode.id)
     if(!user)

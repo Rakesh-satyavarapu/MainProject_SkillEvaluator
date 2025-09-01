@@ -3,6 +3,7 @@ let {connectDB} =  require('./lib/db.js')
 let authRoutes = require('./routes/auth.route.js')
 let userRoutes = require('./routes/user.route.js')
 let skillRoutes = require('./routes/skill.route.js')
+let testRoutes = require('./routes/test.route.js')
 let {protectedRoute} = require('./middlewares/auth.middleware.js')
 const cookieParser = require('cookie-parser');
 
@@ -19,6 +20,7 @@ app.use(cookieParser());
 app.use('/auth',authRoutes)
 app.use('/user',protectedRoute,userRoutes)
 app.use('/skill',skillRoutes)
+app.use('/test',testRoutes)
 
 
 let PORT = process.env.PORT || 5000

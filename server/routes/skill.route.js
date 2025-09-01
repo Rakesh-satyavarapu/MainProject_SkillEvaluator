@@ -1,8 +1,10 @@
 let express = require('express');
 
-let {addSkill} = require('../controllers/skill.controller');
+let {addSkill,getAllSkills} = require('../controllers/skill.controller');
+
 let router = express.Router();
 
-router.post('/AddSkill',addSkill)
+router.post('/addSkill',addSkill)
+router.get('/getSkills',getAllSkills)
 
 module.exports = router;
