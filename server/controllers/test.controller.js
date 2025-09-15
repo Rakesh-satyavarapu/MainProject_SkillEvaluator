@@ -123,9 +123,9 @@ exports.generateSkillQuestions = async (req, res) => {
 };
 
 const mongoose = require("mongoose");
-// const Question = require("../models/questio n.model");
 const Skill = require("../models/skill.model");
-// const { generateSkillQuestions } = require(""); // Update path
+const attempt = require("../models/testAttempt.model.js");
+
 
 exports.randomTestQuestions = async (req, res) => {
   try {
@@ -142,7 +142,6 @@ exports.randomTestQuestions = async (req, res) => {
       return res.status(404).json({ message: "Skill not found or missing name" });
     }
 
-    // ✅ Removed "user" from match
     const questions = await Question.aggregate([
       { $match: { skill: skillObjectId, level } },
       { $sample: { size: 50 } }
@@ -150,11 +149,19 @@ exports.randomTestQuestions = async (req, res) => {
 
     if (!questions || questions.length === 0) {
       console.log("No questions found. Generating new ones...");
-      return await generateSkillQuestions(req, res); // fallback
+      // return await generateSkillQuestions(req, res); // enable later
+      return res.status(404).json({ message: "No questions found for this skill/level" });
     }
 
+    await attempt.create({
+      user: req.user._id,
+      skill: skillObjectId,
+      level,
+      questions
+    });
+
     res.status(200).json({
-      message: "Random test questions retrieved successfully",
+      message: "Random test questions retrieved successfully and saved in the attempt model",
       data: questions
     });
 
