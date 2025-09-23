@@ -124,8 +124,7 @@ exports.generateSkillQuestions = async (req, res) => {
 
 const mongoose = require("mongoose");
 const Skill = require("../models/skill.model");
-const attempt = require("../models/testAttempt.model.js");
-
+const Attempt = require("../models/testAttempt.model.js");
 
 exports.randomTestQuestions = async (req, res) => {
   try {
@@ -136,41 +135,91 @@ exports.randomTestQuestions = async (req, res) => {
     }
 
     const skillObjectId = new mongoose.Types.ObjectId(skillId);
-
     const skill = await Skill.findById(skillObjectId);
-    if (!skill || !skill.name) {
-      return res.status(404).json({ message: "Skill not found or missing name" });
+    if (!skill) {
+      return res.status(404).json({ message: "Skill not found" });
     }
 
+    // Pick 50 random questions
     const questions = await Question.aggregate([
       { $match: { skill: skillObjectId, level } },
       { $sample: { size: 50 } }
     ]);
 
-    if (!questions || questions.length === 0) {
-      console.log("No questions found. Generating new ones...");
-      // return await generateSkillQuestions(req, res); // enable later
+    if (!questions.length) {
       return res.status(404).json({ message: "No questions found for this skill/level" });
     }
 
-    await attempt.create({
+    // Save Attempt with question references
+    const attempt = await Attempt.create({
       user: req.user._id,
       skill: skillObjectId,
       level,
-      questions
+      totalQuestions: questions.length,
+      questions: questions.map(q => ({ questionId: q._id }))
     });
 
+    // Return questions without correct answers
     res.status(200).json({
-      message: "Random test questions retrieved successfully and saved in the attempt model",
-      data: questions
+      message: "Random test questions retrieved successfully",
+      attemptId: attempt._id,
+      data: questions.map(q => ({
+        _id: q._id,
+        question: q.question,
+        options: q.options,
+        answer: q.correctAnswer,
+        topic: q.topic,
+        level: q.level,
+      }))
+    });
+  } catch (err) {
+    console.error("Random test error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+
+exports.submitTest = async (req, res) => {
+  try {
+    const { attemptId, answers } = req.body;
+    const attempt = await Attempt.findById(attemptId).populate({
+      path: "questions.questionId",
+      select: "correctAnswer topic"
+    });
+    if (!attempt) return res.status(404).json({ message: "Attempt not found" });
+
+    if (attempt.submitted) {
+      return res.status(400).json({ message: "Test already submitted" });
+    }
+
+    attempt.questions.forEach(q => {
+      const userAnswer = answers[q.questionId._id.toString()] ?? null;
+      q.selectedAnswer = userAnswer;
+      q.isCorrect = userAnswer && q.questionId.correctAnswer
+        ? userAnswer.trim().toLowerCase() === q.questionId.correctAnswer.trim().toLowerCase()
+        : false;
+    });
+
+    attempt.correctAnswers = attempt.questions.filter(q => q.isCorrect).length;
+    attempt.totalQuestions = attempt.questions.length;
+    attempt.score = Math.round((attempt.correctAnswers / attempt.totalQuestions) * 100);
+    attempt.weakTopics = attempt.questions
+      .filter(q => !q.isCorrect && q.questionId.topic)
+      .map(q => q.questionId.topic);
+
+    attempt.submitted = true; // Mark as submitted
+    await attempt.save();
+
+    res.status(200).json({
+      message: "Test submitted successfully",
+      score: attempt.score,
+      correctAnswers: attempt.correctAnswers,
+      totalQuestions: attempt.totalQuestions,
+      weakTopics: attempt.weakTopics
     });
 
   } catch (err) {
-    console.error("Random test questions error:", err);
-    res.status(500).json({
-      message: "Failed to retrieve random test questions",
-      error: err.message,
-      details: err.errorDetails || null
-    });
+    console.error(err);
+    res.status(500).json({ message: "Failed to submit test", error: err.message });
   }
 };
