@@ -11,9 +11,17 @@ const questionSchema = new mongoose.Schema({
     enum: ['beginner', 'intermediate', 'advanced'], 
     required: true 
   },
-  topic: { 
+  mainTopic: { 
     type: String, 
     required: true 
+  },
+  subTopic: { 
+    type: String, 
+    required: true 
+  },
+  topic: {
+    type: String,
+    required: true
   },
   question: { 
     type: String, 

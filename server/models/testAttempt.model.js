@@ -20,6 +20,12 @@ const attemptSchema = new mongoose.Schema({
   correctAnswers: { type: Number, default: 0 },
   totalQuestions: { type: Number, default: 0 },
   weakTopics: [String],
+  youtubeVideoLinks: [
+    {
+      topic: { type: String },
+      links: [{ type: String }]
+    }
+  ],
   takenAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 

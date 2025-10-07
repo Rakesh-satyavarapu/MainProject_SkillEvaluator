@@ -1,9 +1,13 @@
 require("dotenv").config();
 
+const mongoose = require("mongoose");
+const Skill = require("../models/skill.model");
+const User = require("../models/user.model");
+const Attempt = require("../models/testAttempt.model.js");
 const Question = require("../models/question.model");
 const skillSchema = require('../models/skill.model');
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const normalizeQuestion = (q) => {
@@ -41,11 +45,13 @@ exports.generateSkillQuestions = async (req, res) => {
       return res.status(404).json({ message: "Skill not found or missing name" });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `
       Generate 60 multiple-choice questions for the skill "${skill.name}" at "${level}" level.
       Each question must have:
+        - A mainTopic (general category, e.g., "Machine Learning" or "OOP Concepts")
+        - A subTopic (specific subcategory, e.g., "Training vs Testing" or "Polymorphism")
         - A clearly defined topic
         - 4 options (A, B, C, D) but answers should be text values
         - The correct answer (write the actual text of the correct option, not just "A" or "B")
@@ -54,6 +60,8 @@ exports.generateSkillQuestions = async (req, res) => {
       Format:
       [
         {
+          "mainTopic": "string",
+          "subTopic": "string",
           "topic": "string",
           "question": "string",
           "options": ["A","B","C","D"], 
@@ -122,16 +130,21 @@ exports.generateSkillQuestions = async (req, res) => {
   }
 };
 
-const mongoose = require("mongoose");
-const Skill = require("../models/skill.model");
-const Attempt = require("../models/testAttempt.model.js");
-
 exports.randomTestQuestions = async (req, res) => {
   try {
     const { skillId, level } = req.body;
 
     if (!skillId || !level) {
       return res.status(400).json({ message: "skillId and level are required" });
+    }
+
+    // Check if user has registered this skill
+    const user = await User.findById(req.user._id);
+    const isRegistered = user.registeredSkills.some(
+      (s) => s.skill.toString() === skillId && s.status === "registered"
+    );
+    if (!isRegistered) {
+      return res.status(403).json({ message: "You must register this skill before attempting the test." });
     }
 
     const skillObjectId = new mongoose.Types.ObjectId(skillId);
@@ -168,6 +181,8 @@ exports.randomTestQuestions = async (req, res) => {
         question: q.question,
         options: q.options,
         answer: q.correctAnswer,
+        mainTopic: q.mainTopic,
+        subTopic: q.subTopic,
         topic: q.topic,
         level: q.level,
       }))
@@ -178,48 +193,146 @@ exports.randomTestQuestions = async (req, res) => {
   }
 };
 
+const { getYoutubeVideos } = require('../youtubeServices.js')
 
 exports.submitTest = async (req, res) => {
   try {
     const { attemptId, answers } = req.body;
-    const attempt = await Attempt.findById(attemptId).populate({
-      path: "questions.questionId",
-      select: "correctAnswer topic"
-    });
-    if (!attempt) return res.status(404).json({ message: "Attempt not found" });
 
-    if (attempt.submitted) {
-      return res.status(400).json({ message: "Test already submitted" });
+    if (!attemptId || typeof answers !== 'object') {
+      return res.status(400).json({ message: "Missing or invalid attemptId and answers" });
     }
 
+    const attempt = await Attempt.findById(attemptId).populate({
+      path: "questions.questionId",
+      select: "correctAnswer topic subTopic"
+    });
+
+    if (!attempt) {
+      return res.status(404).json({ message: "We couldn’t find that test attempt" });
+    }
+
+    if (attempt.submitted) {
+      return res.status(400).json({ message: "This test has already been submitted" });
+    }
+
+    // Evaluate answers
     attempt.questions.forEach(q => {
       const userAnswer = answers[q.questionId._id.toString()] ?? null;
       q.selectedAnswer = userAnswer;
-      q.isCorrect = userAnswer && q.questionId.correctAnswer
-        ? userAnswer.trim().toLowerCase() === q.questionId.correctAnswer.trim().toLowerCase()
-        : false;
+      q.isCorrect = userAnswer &&
+        q.questionId.correctAnswer &&
+        userAnswer.trim().toLowerCase() === q.questionId.correctAnswer.trim().toLowerCase();
     });
 
     attempt.correctAnswers = attempt.questions.filter(q => q.isCorrect).length;
     attempt.totalQuestions = attempt.questions.length;
     attempt.score = Math.round((attempt.correctAnswers / attempt.totalQuestions) * 100);
-    attempt.weakTopics = attempt.questions
-      .filter(q => !q.isCorrect && q.questionId.topic)
-      .map(q => q.questionId.topic);
 
-    attempt.submitted = true; // Mark as submitted
+    // Identify weak topics
+    const weakTopicsSet = new Set();
+    attempt.questions.forEach(q => {
+      if (!q.isCorrect) {
+        const subTopic = q.questionId.subTopic?.trim();
+        const topic = q.questionId.topic?.trim();
+        if (subTopic) weakTopicsSet.add(subTopic);
+        else if (topic) weakTopicsSet.add(topic);
+      }
+    });
+
+    attempt.weakTopics = Array.from(weakTopicsSet);
+
+    // Fetch skill name for YouTube search
+    const skillDoc = await Skill.findById(attempt.skill);
+    const skillName = skillDoc?.name || "Skill";
+
+    const language = 'en';
+    // Suggest videos for weak areas
+    attempt.youtubeVideoLinks = await getYoutubeVideos(skillName, attempt.weakTopics,language);
+
+    attempt.submitted = true;
     await attempt.save();
 
     res.status(200).json({
-      message: "Test submitted successfully",
+      message: "Your test has been submitted successfully",
       score: attempt.score,
       correctAnswers: attempt.correctAnswers,
       totalQuestions: attempt.totalQuestions,
-      weakTopics: attempt.weakTopics
+      weakTopics: attempt.weakTopics,
+      youtubeVideoLinks: attempt.youtubeVideoLinks
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to submit test", error: err.message });
+    console.log("Submit test error:", err.response?.data || err.message);
+    res.status(500).json({
+      message: "Something went wrong while submitting your test",
+      error: err.message
+    });
   }
 };
+
+
+// exports.submitTest = async (req, res) => {
+//   try {
+//     const { attemptId, answers } = req.body;
+//     const attempt = await Attempt.findById(attemptId).populate({
+//       path: "questions.questionId",
+//       select: "correctAnswer topic subTopic"
+//     });
+//     if (!attempt) return res.status(404).json({ message: "Attempt not found" });
+
+//     if (attempt.submitted) {
+//       return res.status(400).json({ message: "Test already submitted" });
+//     }
+
+//     attempt.questions.forEach(q => {
+//       const userAnswer = answers[q.questionId._id.toString()] ?? null;
+//       q.selectedAnswer = userAnswer;
+//       q.isCorrect = userAnswer && q.questionId.correctAnswer
+//         ? userAnswer.trim().toLowerCase() === q.questionId.correctAnswer.trim().toLowerCase()
+//         : false;
+//     });
+
+//     attempt.correctAnswers = attempt.questions.filter(q => q.isCorrect).length;
+//     attempt.totalQuestions = attempt.questions.length;
+//     attempt.score = Math.round((attempt.correctAnswers / attempt.totalQuestions) * 100);
+
+//     // Build weakTopics: if subTopic present, use subTopic; else use topic
+//     const weakTopicsSet = new Set();
+//     attempt.questions.forEach(q => {
+//       if (!q.isCorrect) {
+//         const subTopic = q.questionId.subTopic?.trim();
+//         const topic = q.questionId.topic?.trim();
+//         if (subTopic) {
+//           weakTopicsSet.add(subTopic);
+//         } else if (topic) {
+//           weakTopicsSet.add(topic);
+//         }
+//       }
+//     });
+//     attempt.weakTopics = Array.from(weakTopicsSet);
+
+//     // Fetch skill name for YouTube search
+//     const skillDoc = await Skill.findById(attempt.skill);
+//     const skillName = skillDoc?.name || '';
+
+//     // Fetch YouTube video links for weak topics
+//     attempt.youtubeVideoLinks = await getYoutubeVideos(skillName, attempt.weakTopics);
+
+//     attempt.submitted = true;
+//     await attempt.save();
+
+//     res.status(200).json({
+//       message: "Test submitted successfully",
+//       score: attempt.score,
+//       correctAnswers: attempt.correctAnswers,
+//       totalQuestions: attempt.totalQuestions,
+//       weakTopics: attempt.weakTopics,
+//       youtubeVideoLinks: attempt.youtubeVideoLinks
+//     });
+
+//   } catch (err) {
+//     console.error("YouTube API error:", err.response?.data || err.message);
+//     res.status(500).json({ message: "Failed to submit test", error: err.message });
+//   }
+// };

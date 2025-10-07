@@ -74,3 +74,15 @@ exports.logout = async(req,res) =>{
         return res.status(500).json({msg:"Internal server error"})
     }
 }
+
+exports.userLoggedIn = async(req,res) =>{
+    try{
+        let user = await userSchema.findById(req.user.id)
+        if(!user) return res.status(404).json({msg:"User not found"})
+        return res.status(200).json(user)
+    }
+    catch(err)
+    {
+        return res.status(500).json({msg:"Internal server error"})
+    }
+}   

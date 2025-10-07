@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser');
 
 let express = require('express');
 let app = express();
+let cors = require('cors')
 
 let dotenv = require('dotenv')
 dotenv.config()
@@ -16,6 +17,7 @@ dotenv.config()
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
+app.use(cors())
 
 app.use('/auth',authRoutes)
 app.use('/user',protectedRoute,userRoutes)
@@ -28,3 +30,31 @@ app.listen(PORT,()=>{
     connectDB();
     console.log(`Server listening on http://localhost:${PORT}`)
 })
+
+// const axios = require('axios');
+
+// filepath: d:\rakesh\MainProject\server\controllers\test.controller.js
+
+// async function listGeminiModels() {
+//   try {
+//     const apiKey = process.env.GEMINI_API_KEY;
+//     const response = await axios.get(
+//       'https://generativelanguage.googleapis.com/v1beta/models',
+//       { params: { key: apiKey } }
+//     );
+//     // Returns array of model objects
+//     return response.data.models;
+//   } catch (err) {
+//     console.error("ListModels error:", err.message);
+//     return null;
+//   }
+// }
+
+// // Example usage:
+// listGeminiModels().then(models => {
+//   if (models) {
+//     console.log("Available Gemini models:", models);
+//   } else {
+//     console.log("Failed to list models.");
+//   }
+// });
