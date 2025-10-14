@@ -40,6 +40,11 @@ const userSchema = mongoose.Schema({
         enum: ["beginner", "intermediate", "advanced"],
         default: "beginner"
         },
+        role:{
+            type:String,
+            enum:["user","admin"],
+            default:"user"
+        },
         tests:[{type: mongoose.Schema.Types.ObjectId, ref: 'Attempt'}],
         // score: { type: Number, default: 0 },
         // quizzesTaken: { type: Number, default: 0 },
