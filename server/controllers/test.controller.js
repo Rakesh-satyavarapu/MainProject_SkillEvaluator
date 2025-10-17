@@ -271,7 +271,60 @@ exports.submitTest = async (req, res) => {
   }
 };
 
+exports.getTestHistoryBySkill = async (req, res) => {
+  try {
+    const { skillId } = req.params;
+    const userId = req.user._id;
 
+    if (!skillId) {
+      return res.status(400).json({ message: "Skill ID is required" });
+    }
+
+    // Fetch all submitted attempts for this user and skill
+    const attempts = await Attempt.find({ skill: skillId, user: userId, submitted: true })
+      .populate({
+        path: "questions.questionId",
+        select: "question mainTopic subTopic topic options correctAnswer"
+      })
+      .populate({
+        path: "skill",
+        select: "name description"
+      })
+      .sort({ takenAt: -1 }); // latest first
+
+    res.status(200).json({ attempts });
+
+  } catch (err) {
+    console.error("Error fetching test history:", err);
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
+  }
+};
+
+
+exports.getAttemptById = async (req, res) => {
+  try {
+    const { attemptId } = req.params;
+    const userId = req.user._id;
+
+    if (!attemptId) {
+      return res.status(400).json({ message: "Attempt ID is required" });
+    }
+
+    // Fetch attempt with questions and selected options
+    const attempt = await Attempt.findOne({ _id: attemptId, user: userId })
+      .populate({
+        path: 'questions.questionId',
+        select: 'question options correctAnswer topic subTopic',
+      });
+
+    if (!attempt) return res.status(404).json({ message: "Attempt not found" });
+
+    res.status(200).json({ attempt });
+  } catch (err) {
+    console.error("Error fetching attempt:", err);
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
+  }
+};
 // exports.submitTest = async (req, res) => {
 //   try {
 //     const { attemptId, answers } = req.body;

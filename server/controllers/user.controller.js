@@ -1,6 +1,9 @@
 let userSchema = require('../models/user.model')
 let skillSchema = require('../models/skill.model')
 
+
+require('dotenv').config();
+
 exports.registeredSkill = async (req, res) => {
     try {
         const { skill, level } = req.body;
@@ -66,4 +69,5 @@ exports.withdrawSkill = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
 
