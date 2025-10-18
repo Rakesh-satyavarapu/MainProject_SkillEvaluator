@@ -62,6 +62,14 @@ export const useAuthStore = create((set,get) => ({
         } catch (error) {
             toast.error(error.response.data.msg)
         }
-    }
+    },
+    isAdmin: () => {
+    const user = get().authUser;
+    return user?.role === 'admin';
+  },
 
+  // Utility: check if user is logged in
+  isLoggedIn: () => {
+    return !!get().authUser;
+  }
 }));
