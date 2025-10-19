@@ -45,14 +45,8 @@ const SkillDetailPage = () => {
   return (
     <div className="skill-detail-container">
       <div className="skill-card">
-        {/* Header Section */}
         <div className="skill-header">
-          <div className="skill-info">
-            <h2 className="skill-title">
-              {skill.name}
-              {regSkill && <span className="skill-level"> / {regSkill.level}</span>}
-            </h2>
-          </div>
+          <h2 className="skill-title">{skill.name}</h2>
           {regSkill && (
             <button
               className="btn btn-danger withdraw-btn"
@@ -67,6 +61,8 @@ const SkillDetailPage = () => {
 
         {regSkill ? (
           <>
+            <p><strong>Level:</strong> {regSkill.level}</p>
+
             <div className="button-group">
               <button
                 className="btn btn-primary"
@@ -74,7 +70,10 @@ const SkillDetailPage = () => {
               >
                 Take Test
               </button>
-              <button className="btn btn-secondary" onClick={fetchTestHistory}>
+              <button
+                className="btn btn-secondary"
+                onClick={fetchTestHistory}
+              >
                 View Test History
               </button>
             </div>
@@ -92,24 +91,19 @@ const SkillDetailPage = () => {
                   <div key={attempt._id} className="test-card">
                     <div className="test-info">
                       <p>
-                        <strong>Date:</strong>{" "}
-                        {new Date(attempt.takenAt).toLocaleString()}
+                        <strong>Date:</strong> {new Date(attempt.takenAt).toLocaleString()}
                       </p>
                       <p>
-                        <strong>Level:</strong> {attempt.level} |{" "}
-                        <strong>Score:</strong> {attempt.score}%
+                        <strong>Level:</strong> {attempt.level} | <strong>Score:</strong> {attempt.score}%
                       </p>
                       <p>
-                        <strong>Weak Topics:</strong>{" "}
-                        {attempt.weakTopics.join(", ") || "None"}
+                        <strong>Weak Topics:</strong> {attempt.weakTopics.join(", ") || "None"}
                       </p>
                     </div>
                     <button
                       className="btn btn-outline"
                       onClick={() =>
-                        navigate(`/result/${skillId}`, {
-                          state: { attemptId: attempt._id },
-                        })
+                        navigate(`/attempt/${attempt._id}`, { state: { attemptId: attempt._id } })
                       }
                     >
                       View Details
@@ -121,9 +115,7 @@ const SkillDetailPage = () => {
           </>
         ) : (
           <div className="register-section">
-            <p className="register-text">
-              Register to this skill to start testing.
-            </p>
+            <p className="register-text">Register to this skill to start testing.</p>
             <select id="level" className="level-select" defaultValue="beginner">
               <option value="beginner">Beginner</option>
               <option value="intermediate">Intermediate</option>
@@ -168,7 +160,6 @@ const SkillDetailPage = () => {
           box-shadow: 0 12px 28px rgba(0,0,0,0.1);
         }
 
-        /* Header Layout */
         .skill-header {
           display: flex;
           justify-content: space-between;
@@ -176,20 +167,10 @@ const SkillDetailPage = () => {
           margin-bottom: 1rem;
         }
 
-        .skill-info {
-          display: flex;
-          align-items: baseline;
-          gap: 0.3rem;
-        }
-
-        .skill-title, .skill-level {
+        .skill-title {
           font-size: 1.8rem;
           font-weight: 700;
           color: #1f2937;
-        }
-
-        .skill-level {
-          color: #2563eb;
         }
 
         .withdraw-btn {
@@ -223,115 +204,34 @@ const SkillDetailPage = () => {
           font-size: 0.95rem;
         }
 
-        .btn-primary {
-          background-color: #2563eb;
-          color: white;
-        }
+        .btn-primary { background-color: #2563eb; color: white; }
         .btn-primary:hover { background-color: #1e40af; }
-
-        .btn-secondary {
-          background-color: #6b7280;
-          color: white;
-        }
+        .btn-secondary { background-color: #6b7280; color: white; }
         .btn-secondary:hover { background-color: #4b5563; }
-
-        .btn-danger {
-          background-color: #dc2626;
-          color: white;
-        }
+        .btn-danger { background-color: #dc2626; color: white; }
         .btn-danger:hover { background-color: #991b1b; }
-
-        .btn-success {
-          background-color: #16a34a;
-          color: white;
-        }
+        .btn-success { background-color: #16a34a; color: white; }
         .btn-success:hover { background-color: #15803d; }
+        .btn-outline { border: 2px solid #2563eb; color: #2563eb; background: transparent; }
+        .btn-outline:hover { background-color: #2563eb; color: white; }
 
-        .btn-outline {
-          border: 2px solid #2563eb;
-          color: #2563eb;
-          background: transparent;
-        }
-        .btn-outline:hover {
-          background-color: #2563eb;
-          color: white;
-        }
+        .divider { margin: 2rem 0; border: none; border-top: 1px solid #e5e7eb; }
+        .subheading { font-size: 1.25rem; font-weight: 600; color: #111827; margin-bottom: 1rem; }
 
-        .divider {
-          margin: 2rem 0;
-          border: none;
-          border-top: 1px solid #e5e7eb;
-        }
+        .test-history-list { display: flex; flex-direction: column; gap: 1rem; }
+        .test-card { background-color: #f9fafb; border-radius: 12px; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; box-shadow: 0 2px 5px rgba(0,0,0,0.08); transition: transform 0.2s ease; }
+        .test-card:hover { transform: scale(1.02); }
+        .test-info { flex: 1; color: #374151; font-size: 0.95rem; }
 
-        .subheading {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: #111827;
-          margin-bottom: 1rem;
-        }
+        .register-section { text-align: center; margin-top: 2rem; }
+        .register-text { color: #374151; margin-bottom: 1rem; }
+        .level-select { padding: 0.6rem; border-radius: 8px; border: 1px solid #d1d5db; margin-bottom: 1rem; font-size: 0.95rem; }
 
-        .test-history-list {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .test-card {
-          background-color: #f9fafb;
-          border-radius: 12px;
-          padding: 1rem 1.5rem;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.08);
-          transition: transform 0.2s ease;
-        }
-
-        .test-card:hover {
-          transform: scale(1.02);
-        }
-
-        .test-info {
-          flex: 1;
-          color: #374151;
-          font-size: 0.95rem;
-        }
-
-        .register-section {
-          text-align: center;
-          margin-top: 2rem;
-        }
-
-        .register-text {
-          color: #374151;
-          margin-bottom: 1rem;
-        }
-
-        .level-select {
-          padding: 0.6rem;
-          border-radius: 8px;
-          border: 1px solid #d1d5db;
-          margin-bottom: 1rem;
-          font-size: 0.95rem;
-        }
-
-        /* Responsive */
         @media (max-width: 768px) {
-          .skill-card {
-            padding: 1.5rem;
-          }
-          .skill-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-          }
-          .skill-title, .skill-level {
-            font-size: 1.5rem;
-          }
-          .withdraw-btn {
-            align-self: flex-end;
-          }
+          .skill-card { padding: 1.5rem; }
+          .skill-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+          .skill-title { font-size: 1.5rem; }
+          .withdraw-btn { align-self: flex-end; }
         }
       `}</style>
     </div>
