@@ -300,18 +300,17 @@ exports.getTestHistoryBySkill = async (req, res) => {
   }
 };
 
-
 exports.getAttemptById = async (req, res) => {
   try {
     const { attemptId } = req.params;
-    const userId = req.user._id;
+    // const userId = req.user._id;
 
     if (!attemptId) {
       return res.status(400).json({ message: "Attempt ID is required" });
     }
 
     // Fetch attempt with questions and selected options
-    const attempt = await Attempt.findOne({ _id: attemptId, user: userId })
+    const attempt = await Attempt.findOne({ _id: attemptId})
       .populate({
         path: 'questions.questionId',
         select: 'question options correctAnswer topic subTopic',
