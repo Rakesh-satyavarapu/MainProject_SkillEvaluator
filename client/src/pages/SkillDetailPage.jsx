@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSkillStore } from '../store/useSkillStore';
-import { axiosInstance } from '../lib/axios';
+import {axiosInstance} from '../lib/axios';
 
 const SkillDetailPage = () => {
   const { skillId } = useParams();
@@ -31,7 +31,7 @@ const SkillDetailPage = () => {
   const fetchTestHistory = async () => {
     setLoadingHistory(true);
     try {
-      const res = await axiosInstance.get(`/user/skill/${skillId}/testHistory`);
+      const res = await axiosInstance.get(/user/skill/${skillId}/testHistory);
       setTestHistory(res.data.attempts || []);
     } catch (err) {
       console.error("Failed to fetch test history:", err);
@@ -40,44 +40,37 @@ const SkillDetailPage = () => {
     }
   };
 
-  if (!skill) return <p className="loading-text">Loading skill...</p>;
+  if (!skill) return <p className="mt-4 text-center">Loading skill...</p>;
 
   return (
-    <div className="skill-detail-container">
-      <div className="skill-card">
-        {/* Header Section */}
-        <div className="skill-header">
-          <div className="skill-info">
-            <h2 className="skill-title">
-              {skill.name}
-              {regSkill && <span className="skill-level"> | {regSkill.level}</span>}
-            </h2>
-          </div>
-          {regSkill && (
+    <div className="container mt-5">
+      <h2>{skill.name}</h2>
+      <p>{skill.description}</p>
+
+      {regSkill ? (
+        <>
+          <p><strong>Level:</strong> {regSkill.level}</p>
+
+          <div className="mb-3">
             <button
-              className="btn btn-danger withdraw-btn"
+              className="btn btn-primary me-2"
+              onClick={() => navigate(/test/${skillId})}
+            >
+              Take Test
+            </button>
+            <button
+              className="btn btn-secondary me-2"
+              onClick={fetchTestHistory}
+            >
+              View Test History
+            </button>
+            <button
+              className="btn btn-danger"
               onClick={() => withdrawSkill(skillId)}
             >
               Withdraw
             </button>
-          )}
-        </div>
-
-        <p className="skill-description">{skill.description}</p>
-
-        {regSkill ? (
-          <>
-            <div className="button-group">
-              <button
-                className="btn btn-primary"
-                onClick={() => navigate(`/test/${skillId}`)}
-              >
-                Take Test
-              </button>
-              <button className="btn btn-secondary" onClick={fetchTestHistory}>
-                View Test History
-              </button>
-            </div>
+          </div>
 
           <hr />
           <h4>Tests Taken:</h4>
@@ -106,7 +99,7 @@ const SkillDetailPage = () => {
                   <button
                     className="btn btn-outline-primary"
                     onClick={() =>
-                      navigate(`/attempt/${attempt._id}`, { state: { attemptId: attempt._id } })
+                      navigate(/attempt/${attempt._id}, { state: { attemptId: attempt._id } })
                     }
                   >
                     View Details
