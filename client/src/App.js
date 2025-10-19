@@ -11,11 +11,17 @@ import SkillBoard from './pages/SkillBoard';
 import SkillTestPage from './pages/SkillTestPage';
 import TestResultPage from './pages/TestResultPage';
 import SkillDetailPage from './pages/SkillDetailPage';
+import AdminSkillBoard from './pages/AdminSkillBoard';
+import AddSkill from './pages/AddSkill';
+import EditSkill from './pages/EditSkill';  
+import GeneratedQuestionsPage from './pages/GeneratedQuestionsPage';
+
+
 import {Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
 
 function App() {
-  const {authUser,checkAuth} = useAuthStore();
+  const {authUser,checkAuth,isAdmin} = useAuthStore();
   
   useEffect(()=>{checkAuth()},[checkAuth])
 
@@ -27,22 +33,15 @@ function App() {
       <Route path='/login' element={!authUser ? <Login /> : <Navigate to='/' />} />
       <Route path='/register' element={!authUser ? <Register />: <Navigate to='/' />} />
       <Route path='/assist' element={authUser ? <Assist /> : <Navigate to='/login' />} />
-       <Route
-          path="/skills"
-          element={authUser ? <SkillBoard /> : <Navigate to="/login" />}
-        />
-        <Route
-  path="/skill/:skillId"
-  element={authUser ? <SkillDetailPage /> : <Navigate to="/login" />}
-/>
-        <Route
-          path="/test/:skillId"
-          element={authUser ? <SkillTestPage /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/result/:skillId"
-          element={authUser ? <TestResultPage /> : <Navigate to="/login" />}
-        />
+      <Route path="/skills" element={authUser ? <SkillBoard /> : <Navigate to="/login" />}/>
+      <Route path="/skill/:skillId" element={authUser ? <SkillDetailPage /> : <Navigate to="/login" />} />
+      <Route path="/test/:skillId" element={authUser ? <SkillTestPage /> : <Navigate to="/login" />} />
+      <Route path="/result/:skillId" element={authUser ? <TestResultPage /> : <Navigate to="/login" />} />
+      <Route path="/admin/skills" element={authUser  && isAdmin() ? <AdminSkillBoard/> : <Navigate to="/login" />} />
+      <Route path="/admin/addSkill" element={authUser && isAdmin() ? <AddSkill /> : <Navigate to="/login" />} />
+      <Route path="/admin/editSkill/:skillId" element={authUser && isAdmin() ? <EditSkill /> : <Navigate to="/login" />} />
+      {/* <Route path="/Adminskill/:skillId" element={authUser  && isAdmin() ? <AdminSkillBoard/> : <Navigate to="/login" />} /> */}
+      <Route path="/admin/generatedQuestions/:skillId" element={authUser  && isAdmin() ? <GeneratedQuestionsPage/> : <Navigate to="/login" />} />
     </Routes>
     <Toaster/>
     </>

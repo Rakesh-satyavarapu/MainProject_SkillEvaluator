@@ -46,7 +46,7 @@ const Nav = () => {
             {authUser && isAdmin() && (
               <>
                 <li className='nav-item'>
-                  <Link to='/skills'>Skills</Link>
+                  <Link to='/admin/skills'>Skills</Link>
                 </li>
                 <li className='nav-item'>
                   <Link to='/tests'>Tests</Link>

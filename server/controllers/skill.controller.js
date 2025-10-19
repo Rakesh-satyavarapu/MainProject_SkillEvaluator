@@ -15,6 +15,20 @@ exports.addSkill = async (req, res) => {
     }
 }
 
+exports.getSkillById = async (req, res) => {
+  const { skillId } = req.params;
+  try {
+    const skill = await skillSchema.findById(skillId);
+    if (!skill) {
+      return res.status(404).json({ message: 'Skill not found' });
+    }
+    res.status(200).json({ message: 'Skill fetched successfully', data: skill });
+  } catch (error) {
+    console.error('Error fetching skill:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
 exports.getAllSkills = async (req, res) => {
     try {
         let skills = await skillSchema.find();
@@ -53,3 +67,4 @@ exports.updateSkill = async (req, res) => {
         res.status(500).json({message: "Internal Server Error"});
     }
 }
+
