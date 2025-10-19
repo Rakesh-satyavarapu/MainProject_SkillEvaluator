@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import {useAuthStore} from '../store/useAuthStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 const Home = () => {
-
   const { authUser } = useAuthStore();
+
   const features = [
     {
       icon: '🎯',
@@ -30,43 +30,37 @@ const Home = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="home-container">
       {/* Features Section */}
-      <div className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="features-section">
+        <div className="features-wrapper">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-center mb-12"
+            className="features-header"
           >
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Why Choose Our Platform?
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <h2>Why Choose Our Platform?</h2>
+            <p>
               Our AI-driven platform provides a personalized learning experience 
               that adapts to your unique needs and learning style.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="features-grid">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
-                className="text-center"
+                className="feature-card"
               >
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">{feature.icon}</span>
+                <div className="feature-icon">
+                  <span>{feature.icon}</span>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600">
-                  {feature.description}
-                </p>
+                <h3>{feature.title}</h3>
+                <p>{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -74,57 +68,210 @@ const Home = () => {
       </div>
 
       {/* Stats Section */}
-      <div className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="stats-section">
+        <div className="stats-wrapper">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center"
+            className="stats-grid"
           >
-            <div>
-              <div className="text-4xl font-bold text-blue-600 mb-2">10K+</div>
-              <div className="text-gray-600">Active Learners</div>
+            <div className="stat">
+              <div className="stat-number blue">10K+</div>
+              <div className="stat-label">Active Learners</div>
             </div>
-            <div>
-              <div className="text-4xl font-bold text-purple-600 mb-2">500+</div>
-              <div className="text-gray-600">Quizzes Available</div>
+            <div className="stat">
+              <div className="stat-number purple">500+</div>
+              <div className="stat-label">Quizzes Available</div>
             </div>
-            <div>
-              <div className="text-4xl font-bold text-green-600 mb-2">95%</div>
-              <div className="text-gray-600">Success Rate</div>
+            <div className="stat">
+              <div className="stat-number green">95%</div>
+              <div className="stat-label">Success Rate</div>
             </div>
           </motion.div>
         </div>
       </div>
+
       {/* CTA Section */}
-      <div className="py-16 bg-gradient-to-r from-blue-600 to-purple-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="cta-section">
+        <div className="cta-wrapper">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
           >
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Ready to Start Your Learning Journey?
-            </h2>
-            <p className="text-xl text-blue-100 mb-8">
+            <h2>Ready to Start Your Learning Journey?</h2>
+            <p>
               Join thousands of learners who are already improving their skills with our platform.
             </p>
             {!authUser && (
-              <Link
-                to="/register"
-                className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-colors"
-              >
+              <Link to="/register" className="cta-button">
                 Start Learning Today
               </Link>
             )}
           </motion.div>
         </div>
       </div>
-</div>
+
+      {/* Embedded CSS */}
+      <style>{`
+        .home-container {
+          min-height: 100vh;
+          background: linear-gradient(to bottom right, #eff6ff, #ffffff, #f5f3ff);
+          font-family: 'Inter', sans-serif;
+          color: #1f2937;
+        }
+
+        /* Features Section */
+        .features-section {
+          padding: 4rem 1.5rem;
+          background-color: white;
+        }
+        .features-wrapper {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+        .features-header {
+          text-align: center;
+          margin-bottom: 3rem;
+        }
+        .features-header h2 {
+          font-size: 1.875rem;
+          font-weight: 700;
+          margin-bottom: 0.75rem;
+        }
+        .features-header p {
+          color: #4b5563;
+          font-size: 1.1rem;
+          max-width: 600px;
+          margin: 0 auto;
+        }
+
+        .features-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 2rem;
+        }
+        @media (min-width: 768px) {
+          .features-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        @media (min-width: 1024px) {
+          .features-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
+
+        .feature-card {
+          text-align: center;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .feature-card:hover {
+          transform: translateY(-6px);
+        }
+        .feature-icon {
+          width: 64px;
+          height: 64px;
+          background: linear-gradient(to right, #3b82f6, #8b5cf6);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 1rem;
+          color: white;
+          font-size: 1.75rem;
+        }
+        .feature-card h3 {
+          font-size: 1.125rem;
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+        }
+        .feature-card p {
+          color: #6b7280;
+        }
+
+        /* Stats Section */
+        .stats-section {
+          padding: 4rem 1.5rem;
+          background-color: #f9fafb;
+        }
+        .stats-wrapper {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+        .stats-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 2rem;
+          text-align: center;
+        }
+        @media (min-width: 768px) {
+          .stats-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+
+        .stat-number {
+          font-size: 2.5rem;
+          font-weight: 700;
+          margin-bottom: 0.5rem;
+        }
+        .blue { color: #2563eb; }
+        .purple { color: #7c3aed; }
+        .green { color: #16a34a; }
+        .stat-label {
+          color: #6b7280;
+        }
+
+        /* CTA Section */
+        .cta-section {
+          padding: 4rem 1.5rem;
+          background: linear-gradient(to right, #2563eb, #8b5cf6);
+          text-align: center;
+          color: white;
+        }
+        .cta-wrapper {
+          max-width: 900px;
+          margin: 0 auto;
+        }
+        .cta-section h2 {
+          font-size: 1.875rem;
+          font-weight: 700;
+          margin-bottom: 1rem;
+        }
+        .cta-section p {
+          color: #dbeafe;
+          font-size: 1.125rem;
+          margin-bottom: 2rem;
+        }
+        .cta-button {
+          background: white;
+          color: #2563eb;
+          padding: 0.75rem 2rem;
+          border-radius: 8px;
+          font-weight: 500;
+          text-decoration: none;
+          transition: all 0.3s ease;
+        }
+        .cta-button:hover {
+          background: #f9fafb;
+        }
+
+        /* Responsive typography */
+        @media (max-width: 640px) {
+          .features-header h2,
+          .cta-section h2 {
+            font-size: 1.5rem;
+          }
+          .features-header p,
+          .cta-section p {
+            font-size: 1rem;
+          }
+        }
+      `}</style>
+    </div>
   );
 };
 
 export default Home;
-
