@@ -25,7 +25,7 @@ const ChatMessages = () => {
         <div key={index} className="space-y-2">
           {/* User Message */}
           <div className="flex justify-end">
-            <div className="bg-blue-500 text-white px-4 py-2 rounded-2xl max-w-[70%] break-words">
+            <div className="bg-blue-500 text-black px-4 py-2 rounded-2xl max-w-[70%] break-words">
               {chat.userMessage}
             </div>
           </div>

@@ -13,22 +13,24 @@ const ChatInput = () => {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex items-center gap-2 p-4 border-t bg-white"
-    >
+    <form onSubmit={handleSubmit} className="d-flex p-3 bg-white w-100">
+      {/* Input occupies 70% */}
       <input
         type="text"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder="Type your message..."
-        className="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="form-control me-2 flex-grow-1"
+        style={{ width: '80%' }}
         disabled={isSending}
       />
+
+      {/* Button occupies 30% */}
       <button
         type="submit"
         disabled={isSending}
-        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+        className="btn btn-primary"
+        style={{ width: '20%' }}
       >
         {isSending ? 'Sending...' : 'Send'}
       </button>
