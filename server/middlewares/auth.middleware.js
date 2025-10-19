@@ -31,3 +31,21 @@ catch(err)
     return res.status(500).json({msg:"Internal server error"})
 }
 }
+
+exports.adminOnly = async (req, res, next) => {
+  try {
+    // Check if user info exists (set by protectedRoute)
+    if (!req.user) {
+      return res.status(401).json({ msg: "User not authenticated" });
+    }
+
+    // Check if user is an admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ msg: "Access denied. Admins only." });
+    }
+
+    next();
+  } catch (err) {
+    return res.status(500).json({ msg: "Internal server error" });
+  }
+};

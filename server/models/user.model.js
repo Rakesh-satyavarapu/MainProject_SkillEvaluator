@@ -22,7 +22,11 @@ const userSchema = mongoose.Schema({
         required:true,
         minlength:[6,"Password should contains 6 characters"]
     },
-    
+    role:{
+            type:String,
+            enum:["user","admin"],
+            default:"user"
+        },
     registeredSkills:[
       {
         skill: {
@@ -39,11 +43,6 @@ const userSchema = mongoose.Schema({
         type: String,
         enum: ["beginner", "intermediate", "advanced"],
         default: "beginner"
-        },
-        role:{
-            type:String,
-            enum:["user","admin"],
-            default:"user"
         },
         tests:[{type: mongoose.Schema.Types.ObjectId, ref: 'Attempt'}],
         // score: { type: Number, default: 0 },

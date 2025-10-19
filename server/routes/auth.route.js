@@ -8,5 +8,4 @@ router.post('/register',register)
 router.post('/login',login)
 router.get('/logout',logout)
 router.get('/check',protectedRoute,userLoggedIn)
-
 module.exports= router 
