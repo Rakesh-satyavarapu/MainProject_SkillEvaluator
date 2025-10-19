@@ -1,5 +1,6 @@
-let axios = require('axios');
-let Chat = require('../models/chat.model');
+// chat.controller.js
+const axios = require('axios');
+const Chat = require('../models/chat.model');
 
 exports.chatWithGemini = async (req, res) => {
   const userMessage = req.body.message;
@@ -15,13 +16,22 @@ exports.chatWithGemini = async (req, res) => {
         contents: [{ parts: [{ text: userMessage }] }],
       },
       {
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       }
     );
 
-    const reply = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "No reply from Gemini.";
+    let reply = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "No reply from Gemini.";
+
+    // Clean up Gemini response and structure it
+    reply = reply
+      .replace(/\/\/|[*#`]/g, '')             // remove //, *, #, backticks
+      .replace(/^\s*\d+\.\s*/gm, '-')        // numbered points -> '-'
+      .replace(/\r\n|\r/g, '\n')             // normalize line breaks
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .slice(0, 10)                           // limit to first 10 lines for brevity
+      .join('\n');
 
     await Chat.create({
       userId: req.user.id,
