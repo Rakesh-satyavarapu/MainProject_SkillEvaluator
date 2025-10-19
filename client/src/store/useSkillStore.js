@@ -8,6 +8,7 @@ export const useSkillStore = create((set, get) => ({
   registeredSkills: [],
   tests: {},          // skillId -> questions
   testResults: {},    // skillId -> result
+  attempts: {},  // attemptId -> attempt details
   isLoading: false,
   isProcessing: false,
 
@@ -109,7 +110,23 @@ export const useSkillStore = create((set, get) => ({
     } finally {
       set({ isLoading: false });
     }
+    
   },
+
+  fetchAttemptById: async (attemptId) => {
+    set({ isLoading: true });
+    try {
+      const res = await axiosInstance.get(`/user/attempt/${attemptId}`);
+      set((state) => ({
+        attempts: { ...state.attempts, [attemptId]: res.data.attempt },
+      }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to fetch attempt');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   
   getRegisteredSkill: (skillId) =>
     get().registeredSkills.find(
