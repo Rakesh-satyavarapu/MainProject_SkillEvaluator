@@ -10,7 +10,7 @@ const GeneratedQuestionsPage = () => {
     return (
       <div className="container mt-5 text-center">
         <h4>No data found. Please generate questions again.</h4>
-        <button className="btn btn-secondary mt-3" onClick={() => navigate('/adminSkills')}>
+        <button className="btn btn-secondary mt-3" onClick={() => navigate('/admin/skills')}>
           ⬅️ Back to Skills
         </button>
       </div>
@@ -23,7 +23,7 @@ const GeneratedQuestionsPage = () => {
     <div className="container mt-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h3>🧠 Generated Questions</h3>
-        <button className="btn btn-outline-primary" onClick={() => navigate('/adminSkills')}>
+        <button className="btn btn-outline-primary" onClick={() => navigate('/admin/skills')}>
           ⬅️ Back to Skills
         </button>
       </div>

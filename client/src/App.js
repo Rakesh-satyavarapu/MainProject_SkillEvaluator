@@ -13,7 +13,8 @@ import TestResultPage from './pages/TestResultPage';
 import SkillDetailPage from './pages/SkillDetailPage';
 import AdminSkillBoard from './pages/AdminSkillBoard';
 import AddSkill from './pages/AddSkill';
-import EditSkill from './pages/EditSkill';  
+import EditSkill from './pages/EditSkill';
+import AttemptPage from './pages/AttemptPage';  
 import GeneratedQuestionsPage from './pages/GeneratedQuestionsPage';
 
 
@@ -37,10 +38,10 @@ function App() {
       <Route path="/skill/:skillId" element={authUser ? <SkillDetailPage /> : <Navigate to="/login" />} />
       <Route path="/test/:skillId" element={authUser ? <SkillTestPage /> : <Navigate to="/login" />} />
       <Route path="/result/:skillId" element={authUser ? <TestResultPage /> : <Navigate to="/login" />} />
+      <Route path="/attempt/:attemptId" element={authUser ? <AttemptPage /> : <Navigate to="/login" />} />
       <Route path="/admin/skills" element={authUser  && isAdmin() ? <AdminSkillBoard/> : <Navigate to="/login" />} />
       <Route path="/admin/addSkill" element={authUser && isAdmin() ? <AddSkill /> : <Navigate to="/login" />} />
       <Route path="/admin/editSkill/:skillId" element={authUser && isAdmin() ? <EditSkill /> : <Navigate to="/login" />} />
-      {/* <Route path="/Adminskill/:skillId" element={authUser  && isAdmin() ? <AdminSkillBoard/> : <Navigate to="/login" />} /> */}
       <Route path="/admin/generatedQuestions/:skillId" element={authUser  && isAdmin() ? <GeneratedQuestionsPage/> : <Navigate to="/login" />} />
     </Routes>
     <Toaster/>

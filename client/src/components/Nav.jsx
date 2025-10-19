@@ -9,7 +9,7 @@ const Nav = () => {
     <div className='container-fluid'>
       <nav className='navbar d-flex justify-content-between align-items-center p-3 fixed-top-70'>
         <div>
-          <h1 className='nav-logo m-0'>Skill Evaluator</h1>
+          <Link to='/'><h1 className='nav-logo m-0'>Skill Evaluator</h1></Link>
         </div>
         <div>
           <ul className='navbar-nav d-flex flex-row gap-3 align-items-center m-0'>
@@ -26,9 +26,6 @@ const Nav = () => {
 
             {authUser && !isAdmin() && (
               <>
-                <li className='nav-item'>
-                  <Link to='/'>Home</Link>
-                </li>
                 <li className='nav-item'>
                   <Link to='/skills'>Skills Dashboard</Link>
                 </li>

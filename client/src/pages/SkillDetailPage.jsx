@@ -183,7 +183,7 @@ const SkillDetailPage = () => {
                   <button
                     className="btn btn-outline-primary"
                     onClick={() =>
-                      navigate(`/result/${skillId}`, { state: { attemptId: attempt._id } })
+                      navigate(`/attempt/${attempt._id}`, { state: { attemptId: attempt._id } })
                     }
                   >
                     View Details
