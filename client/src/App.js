@@ -15,6 +15,9 @@ import AdminSkillBoard from './pages/AdminSkillBoard';
 import AddSkill from './pages/AddSkill';
 import EditSkill from './pages/EditSkill';
 import AttemptPage from './pages/AttemptPage';  
+import AdminDashboard from './pages/AdminDashboard';
+import UserDetails from './pages/UserDetails';
+import RegisteredUsers from './pages/RegisteredUsers';
 import GeneratedQuestionsPage from './pages/GeneratedQuestionsPage';
 
 
@@ -35,10 +38,16 @@ function App() {
       <Route path='/register' element={!authUser ? <Register />: <Navigate to='/' />} />
       <Route path='/assist' element={authUser ? <Assist /> : <Navigate to='/login' />} />
       <Route path="/skills" element={authUser ? <SkillBoard /> : <Navigate to="/login" />}/>
+      
       <Route path="/skill/:skillId" element={authUser ? <SkillDetailPage /> : <Navigate to="/login" />} />
       <Route path="/test/:skillId" element={authUser ? <SkillTestPage /> : <Navigate to="/login" />} />
       <Route path="/result/:skillId" element={authUser ? <TestResultPage /> : <Navigate to="/login" />} />
       <Route path="/attempt/:attemptId" element={authUser ? <AttemptPage /> : <Navigate to="/login" />} />
+      
+      <Route path="/admin/dashboard" element={authUser  && isAdmin() ? <AdminDashboard/> : <Navigate to="/login" />} />
+      <Route path="/admin/users" element={authUser  && isAdmin() ? <RegisteredUsers/> : <Navigate to="/login" />} />
+      <Route path="/admin/user/:userId" element={authUser  && isAdmin() ? <UserDetails/> : <Navigate to="/login" />} />
+      
       <Route path="/admin/skills" element={authUser  && isAdmin() ? <AdminSkillBoard/> : <Navigate to="/login" />} />
       <Route path="/admin/addSkill" element={authUser && isAdmin() ? <AddSkill /> : <Navigate to="/login" />} />
       <Route path="/admin/editSkill/:skillId" element={authUser && isAdmin() ? <EditSkill /> : <Navigate to="/login" />} />

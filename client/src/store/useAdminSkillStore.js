@@ -27,12 +27,14 @@ export const useAdminSkillStore = create((set, get) => ({
   addSkill: async ({ name, description }) => {
     set({ isProcessing: true });
     try {
-      await axiosInstance.post('/admin/addSkill', { name, description });
+      let res = await axiosInstance.post('/admin/addSkill', { name, description });
       toast.success('Skill added successfully');
       await get().fetchAllSkills();
+      return res.data;
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || 'Failed to add skill');
+      return null;
     } finally {
       set({ isProcessing: false });
     }

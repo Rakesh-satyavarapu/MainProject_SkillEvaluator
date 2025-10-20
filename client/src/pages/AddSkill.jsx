@@ -22,7 +22,7 @@ const AddSkill = () => {
       const response = await addSkill({ name, description });
 
       if (response) {
-        navigate('/admin/skills');
+        navigate("/admin/skills");
       }
     } catch (error) {
       console.error(error);

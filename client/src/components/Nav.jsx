@@ -42,11 +42,14 @@ const Nav = () => {
 
             {authUser && isAdmin() && (
               <>
+                <li className="nav-item">
+                  <Link to="/admin/dashboard">Dashboard</Link>
+              </li>
                 <li className='nav-item'>
                   <Link to='/admin/skills'>Skills</Link>
                 </li>
                 <li className='nav-item'>
-                  <Link to='/tests'>Tests</Link>
+                  <Link to='/admin/users'>Users</Link>
                 </li>
                 <li className='nav-item'>
                   <button className='btn text-danger' onClick={logout}>
