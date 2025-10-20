@@ -49,6 +49,9 @@ const Nav = () => {
                   <Link to='/admin/skills'>Skills</Link>
                 </li>
                 <li className='nav-item'>
+                  <Link to='/admin/users'>User Requests</Link>
+                </li>
+                <li className='nav-item'>
                   <Link to='/admin/users'>Users</Link>
                 </li>
                 <li className='nav-item'>
