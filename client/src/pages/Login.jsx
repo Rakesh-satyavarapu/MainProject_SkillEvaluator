@@ -34,8 +34,8 @@ const Login = () => {
       const { left, top, width, height } = card.getBoundingClientRect();
       const x = e.clientX - left - width / 2;
       const y = e.clientY - top - height / 2;
-      card.style.setProperty("--mouse-x", `${x / (width / 2) * 10}deg`);
-      card.style.setProperty("--mouse-y", `${y / (height / 2) * 10}deg`);
+      card.style.setProperty("--mouse-x", `${(x / (width / 2)) * 10}deg`);
+      card.style.setProperty("--mouse-y", `${(y / (height / 2)) * 10}deg`);
 
       // Neon particle trail
       const particle = document.createElement("div");
@@ -234,7 +234,7 @@ const Login = () => {
 
       <form className="form-group" onSubmit={submitHandler}>
         <img
-          src="https://image.shutterstock.com/image-vector/abstract-circle-ai-text-logo-futuristic-2629657437.jpg"
+          src="/ai-logo.png"
           alt="AI Logo"
           className="ai-card-image"
         />

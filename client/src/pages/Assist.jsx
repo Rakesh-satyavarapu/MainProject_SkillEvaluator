@@ -35,12 +35,12 @@ const Assist = () => {
         .chat-wrapper {
           display: flex;
           flex-direction: column;
-          width: 100%;
-          max-width: 850px;
-          height: 90vh;
+          width: 95%;
+          max-width: 700px;      /* smaller width */
+          height: 78vh;          /* smaller height */
           background: #ffffff;
-          border-radius: 18px;
-          box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+          border-radius: 14px;    /* slightly smaller radius */
+          box-shadow: 0 6px 20px rgba(0,0,0,0.08); /* softer shadow */
           overflow: hidden;
           backdrop-filter: blur(6px);
           animation: fadeIn 0.6s ease-in-out;
@@ -55,26 +55,27 @@ const Assist = () => {
         .chat-header {
           background: linear-gradient(90deg, #2563eb, #3b82f6);
           color: white;
-          padding: 1.2rem;
-          font-size: 1.2rem;
+          padding: 1rem;
+          font-size: 1.1rem;
           font-weight: 600;
           text-align: center;
-          border-top-left-radius: 18px;
-          border-top-right-radius: 18px;
+          border-top-left-radius: 14px;
+          border-top-right-radius: 14px;
           letter-spacing: 0.5px;
           box-shadow: 0 2px 10px rgba(37,99,235,0.3);
         }
 
         /* Messages */
         .chat-message {
-          padding: 0.9rem 1.2rem;
-          margin: 0.8rem 1rem;
-          border-radius: 16px;
-          font-size: 0.98rem;
-          line-height: 1.6;
+          padding: 0.6rem 0.9rem;       /* smaller padding */
+          margin: 0.5rem 0.8rem;        /* reduced vertical spacing */
+          border-radius: 14px;
+          font-size: 0.88rem;           /* slightly smaller font */
+          line-height: 1.5;
           animation: fadeInUp 0.4s ease;
           word-break: break-word;
           white-space: pre-wrap;
+          max-width: 80%;
         }
 
         @keyframes fadeInUp {
@@ -84,38 +85,35 @@ const Assist = () => {
 
         /* User message bubble */
         .chat-message.user {
-          background: #2b4183ff;     /* blue bubble */
-          color: #0a0101ff;          /* white text */
+          background: #2b4183ff;
+          color: #ffffff;
           align-self: flex-end;
           border-bottom-right-radius: 4px;
           box-shadow: 0 4px 8px rgba(37,99,235,0.2);
-          word-break: break-word;
-          white-space: pre-wrap;   /* preserve line breaks */
         }
 
         /* Bot message bubble */
         .chat-message.bot {
-          background: #345597ff;     /* light grey bubble */
-          color: #01050aff !important; /* dark text, force visibility */
+          background: #345597ff;
+          color: #ffffff;
           align-self: flex-start;
           border-bottom-left-radius: 4px;
           box-shadow: 0 2px 6px rgba(0,0,0,0.05);
           text-align: justify;
-          word-break: break-word;
-          white-space: pre-wrap;   /* preserve line breaks */
         }
 
         /* Scroll */
         .chat-messages {
           flex: 1;
           overflow-y: auto;
-          padding: 1rem;
+          padding: 0.8rem;
           scrollbar-width: thin;
         }
 
         .chat-messages::-webkit-scrollbar {
           width: 6px;
         }
+
         .chat-messages::-webkit-scrollbar-thumb {
           background-color: rgba(156,163,175,0.4);
           border-radius: 3px;
@@ -124,7 +122,7 @@ const Assist = () => {
         /* Input */
         .chat-input {
           border-top: 1px solid #e5e7eb;
-          padding: 1rem;
+          padding: 0.8rem;
           background-color: #f9fafb;
           display: flex;
           align-items: center;
@@ -133,10 +131,10 @@ const Assist = () => {
 
         .chat-input input {
           flex: 1;
-          padding: 0.7rem 1rem;
+          padding: 0.6rem 0.9rem;
           border-radius: 10px;
           border: 1px solid #d1d5db;
-          font-size: 0.95rem;
+          font-size: 0.9rem;
           outline: none;
           transition: border-color 0.2s ease;
         }
@@ -151,7 +149,7 @@ const Assist = () => {
           color: white;
           border: none;
           border-radius: 10px;
-          padding: 0.6rem 1.3rem;
+          padding: 0.5rem 1.2rem;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.3s ease;
@@ -164,14 +162,17 @@ const Assist = () => {
         /* Responsive */
         @media (max-width: 768px) {
           .chat-wrapper {
-            height: 85vh;
+            height: 70vh;
           }
           .chat-header {
-            font-size: 1.05rem;
-            padding: 1rem;
+            font-size: 1rem;
+            padding: 0.9rem;
           }
           .chat-input input {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+          }
+          .chat-input button {
+            padding: 0.45rem 1rem;
           }
         }
       `}</style>

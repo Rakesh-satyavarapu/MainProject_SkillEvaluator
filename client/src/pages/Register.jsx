@@ -54,6 +54,7 @@ const Register = () => {
   return (
     <div className="register-container">
       <style>{`
+        /* ===== ANIMATIONS ===== */
         @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         @keyframes float3D { 0% { transform: translateY(0px) rotateZ(0deg); } 50% { transform: translateY(-12px) rotateZ(3deg); } 100% { transform: translateY(0px) rotateZ(0deg); } }
         @keyframes hologramPulse { 0%,100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.9; transform: scale(1.05); } }
@@ -133,7 +134,7 @@ const Register = () => {
 
       <form className="form-group" onSubmit={submitHandler}>
         <img
-          src="https://image.shutterstock.com/image-vector/abstract-circle-ai-text-logo-futuristic-2629657437.jpg"
+          src="/ai-logo.png"
           alt="AI Logo"
           className="ai-card-image"
         />

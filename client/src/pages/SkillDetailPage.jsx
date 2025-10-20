@@ -210,8 +210,8 @@ const SkillDetailPage = () => {
         .btn-secondary:hover { background-color: #4b5563; }
         .btn-danger { background-color: #dc2626; color: white; }
         .btn-danger:hover { background-color: #991b1b; }
-        .btn-success { background-color: #16a34a; color: white; }
-        .btn-success:hover { background-color: #15803d; }
+        .btn-success { background-color: #2563eb; color: white; }
+        .btn-success:hover { background-color: #1e40af; }
         .btn-outline { border: 2px solid #2563eb; color: #2563eb; background: transparent; }
         .btn-outline:hover { background-color: #2563eb; color: white; }
 
