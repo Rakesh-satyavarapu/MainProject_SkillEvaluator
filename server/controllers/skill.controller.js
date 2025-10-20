@@ -8,10 +8,10 @@ exports.addSkill = async (req, res) => {
             return res.status(400).json({message: "Skill already exists"});
         }
         let newSkill = await skillSchema.create({name,description});
-        res.status(201).json({message: "Skill added successfully", data: newSkill});
+        return res.status(201).json({message: "Skill added successfully", data: newSkill});
     } catch (error) {
         console.error("Error adding skill:", error);
-        res.status(500).json({message: "Internal Server Error"});
+        return res.status(500).json({message: "Internal Server Error"});
     }
 }
 
@@ -22,20 +22,20 @@ exports.getSkillById = async (req, res) => {
     if (!skill) {
       return res.status(404).json({ message: 'Skill not found' });
     }
-    res.status(200).json({ message: 'Skill fetched successfully', data: skill });
+    return res.status(200).json({ message: 'Skill fetched successfully', data: skill });
   } catch (error) {
     console.error('Error fetching skill:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
 exports.getAllSkills = async (req, res) => {
     try {
         let skills = await skillSchema.find();
-        res.status(200).json({message: "Skills retrieved successfully", data: skills});
+        return res.status(200).json({message: "Skills retrieved successfully", data: skills});
     } catch (error) {
         console.error("Error retrieving skills:", error);
-        res.status(500).json({message: "Internal Server Error"});
+        return res.status(500).json({message: "Internal Server Error"});
     }
 }
 
@@ -61,10 +61,10 @@ exports.updateSkill = async (req, res) => {
         if (!updatedSkill) {
             return res.status(404).json({message: "Skill not found"});
         }
-        res.status(200).json({message: "Skill updated successfully", data: updatedSkill});
+        return res.status(200).json({message: "Skill updated successfully", data: updatedSkill});
     } catch (error) {
         console.error("Error updating skill:", error);
-        res.status(500).json({message: "Internal Server Error"});
+        return res.status(500).json({message: "Internal Server Error"});
     }
 }
 
