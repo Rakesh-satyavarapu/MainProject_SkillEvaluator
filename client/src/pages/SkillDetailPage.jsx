@@ -22,6 +22,7 @@ const SkillDetailPage = () => {
 
   const [testHistory, setTestHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(false); // toggle history
 
   useEffect(() => {
     fetchAllSkills();
@@ -33,6 +34,7 @@ const SkillDetailPage = () => {
     try {
       const res = await axiosInstance.get(`/user/skill/${skillId}/testHistory`);
       setTestHistory(res.data.attempts || []);
+      setShowHistory(true); // open after fetch
     } catch (err) {
       console.error("Failed to fetch test history:", err);
     } finally {
@@ -72,45 +74,52 @@ const SkillDetailPage = () => {
               </button>
               <button
                 className="btn btn-secondary"
-                onClick={fetchTestHistory}
+                onClick={() => {
+                  if (!showHistory) fetchTestHistory();
+                  else setShowHistory(!showHistory); // toggle visibility
+                }}
               >
-                View Test History
+                {showHistory ? 'Hide Test History' : 'View Test History'}
               </button>
             </div>
 
-            <hr className="divider" />
-            <h4 className="subheading">Tests Taken:</h4>
+            {showHistory && (
+              <>
+                <hr className="divider" />
+                <h4 className="subheading">Tests Taken:</h4>
 
-            {loadingHistory ? (
-              <p className="loading-text">Loading test history...</p>
-            ) : testHistory.length === 0 ? (
-              <p className="empty-text">No tests taken yet.</p>
-            ) : (
-              <div className="test-history-list">
-                {testHistory.map((attempt) => (
-                  <div key={attempt._id} className="test-card">
-                    <div className="test-info">
-                      <p>
-                        <strong>Date:</strong> {new Date(attempt.takenAt).toLocaleString()}
-                      </p>
-                      <p>
-                        <strong>Level:</strong> {attempt.level} | <strong>Score:</strong> {attempt.score}%
-                      </p>
-                      <p>
-                        <strong>Weak Topics:</strong> {attempt.weakTopics.join(", ") || "None"}
-                      </p>
-                    </div>
-                    <button
-                      className="btn btn-outline"
-                      onClick={() =>
-                        navigate(`/attempt/${attempt._id}`, { state: { attemptId: attempt._id } })
-                      }
-                    >
-                      View Details
-                    </button>
+                {loadingHistory ? (
+                  <p className="loading-text">Loading test history...</p>
+                ) : testHistory.length === 0 ? (
+                  <p className="empty-text">No tests taken yet.</p>
+                ) : (
+                  <div className="test-history-list">
+                    {testHistory.map((attempt) => (
+                      <div key={attempt._id} className="test-card">
+                        <div className="test-info">
+                          <p>
+                            <strong>Date:</strong> {new Date(attempt.takenAt).toLocaleString()}
+                          </p>
+                          <p>
+                            <strong>Level:</strong> {attempt.level} | <strong>Score:</strong> {attempt.score}%
+                          </p>
+                          <p>
+                            <strong>Weak Topics:</strong> {attempt.weakTopics.join(", ") || "None"}
+                          </p>
+                        </div>
+                        <button
+                          className="btn btn-outline"
+                          onClick={() =>
+                            navigate(`/attempt/${attempt._id}`, { state: { attemptId: attempt._id } })
+                          }
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </>
         ) : (
@@ -149,7 +158,7 @@ const SkillDetailPage = () => {
           background: white;
           border-radius: 20px;
           box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-          max-width: 900px;
+          max-width: 1200px; /* Increased width */
           width: 100%;
           padding: 2.5rem;
           transition: all 0.3s ease;
@@ -210,8 +219,8 @@ const SkillDetailPage = () => {
         .btn-secondary:hover { background-color: #4b5563; }
         .btn-danger { background-color: #dc2626; color: white; }
         .btn-danger:hover { background-color: #991b1b; }
-        .btn-success { background-color: #16a34a; color: white; }
-        .btn-success:hover { background-color: #15803d; }
+        .btn-success { background-color: #2563eb; color: white; }
+        .btn-success:hover { background-color: #1e40af; }
         .btn-outline { border: 2px solid #2563eb; color: #2563eb; background: transparent; }
         .btn-outline:hover { background-color: #2563eb; color: white; }
 

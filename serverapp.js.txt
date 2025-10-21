@@ -1,0 +1,1136 @@
+>server/app.js
+
+let {connectDB} =  require('./lib/db.js')
+
+let authRoutes = require('./routes/auth.route.js')
+let adminRoutes = require('./routes/admin.route.js')
+let userRoutes = require('./routes/user.route.js')
+let skillRoutes = require('./routes/skill.route.js')
+let testRoutes = require('./routes/test.route.js')
+
+const {protectedRoute,adminOnly} = require('./middlewares/auth.middleware.js')
+const cookieParser = require('cookie-parser');
+
+let express = require('express');
+let app = express();
+let cors = require('cors')
+
+let dotenv = require('dotenv')
+dotenv.config()
+
+app.use(express.json());
+app.use(express.urlencoded({extended:true}));
+app.use(cookieParser());
+
+app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true
+}))
+
+app.use('/auth',authRoutes)
+app.use('/user',protectedRoute,userRoutes)
+app.use('/admin',protectedRoute,adminOnly,adminRoutes)
+app.use('/skill',skillRoutes)
+app.use('/test',testRoutes)
+
+
+let PORT = process.env.PORT || 5000
+app.listen(PORT,()=>{
+    connectDB();
+    console.log(`Server listening on http://localhost:${PORT}`)
+})
+
+
+>models
+
+chat.model.js
+const mongoose = require('mongoose');
+
+const ChatSchema = new mongoose.Schema({
+  userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+  userMessage: String,
+  botReply: String,
+  timestamp: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('Chat', ChatSchema);
+
+question.model.js
+const mongoose = require('mongoose');
+
+const questionSchema = new mongoose.Schema({
+  skill: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Skill', 
+    required: true 
+  },
+  level: { 
+    type: String, 
+    enum: ['beginner', 'intermediate', 'advanced'], 
+    required: true 
+  },
+  mainTopic: { 
+    type: String, 
+    required: true 
+  },
+  subTopic: { 
+    type: String, 
+    required: true 
+  },
+  topic: {
+    type: String,
+    required: true
+  },
+  question: { 
+    type: String, 
+    required: true 
+  },
+  options: [{ 
+    type: String, 
+    required: true 
+  }],
+  correctAnswer: { 
+    type: String, 
+    required: true 
+  }
+}, { timestamps: true });
+
+module.exports = mongoose.model('Question', questionSchema);
+
+skill.model.js
+let mongoose = require('mongoose')
+
+let skillSchema = mongoose.Schema({
+    name:{
+        type:String,
+        unique:true,
+        required:true
+    },
+    description:String, 
+    registeredUsers:[{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'User'
+    }]
+})
+
+module.exports = mongoose.model('Skill',skillSchema)
+
+testAttempt.model.js
+const mongoose = require("mongoose");
+
+const attemptSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  skill: { type: mongoose.Schema.Types.ObjectId, ref: "Skill", required: true },
+  level: {
+    type: String,
+    enum: ["beginner", "intermediate", "advanced"],
+    required: true,
+  },
+  questions: [
+    {
+      questionId: { type: mongoose.Schema.Types.ObjectId, ref: "Question", required: true },
+      selectedAnswer: { type: String, default: null },
+      isCorrect: { type: Boolean, default: false },
+    },
+  ],
+  submitted: { type: Boolean, default: false },
+  score: { type: Number, default: 0 },
+  correctAnswers: { type: Number, default: 0 },
+  totalQuestions: { type: Number, default: 0 },
+  weakTopics: [String],
+  youtubeVideoLinks: [
+    {
+      topic: { type: String },
+      links: [{ type: String }]
+    }
+  ],
+  takenAt: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+module.exports = mongoose.model("Attempt", attemptSchema);
+
+user.model.js
+let mongoose = require('mongoose')
+
+const userSchema = mongoose.Schema({
+    name:{
+        type:String,
+        minlength:[3,'Name should be atleast 3 characters'],
+        required:true,
+    },
+    email:
+    {
+        type:String,
+        required:true,
+        unique:true,
+        match:[
+            /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+            'Please fill a valid email address'
+        ]
+    },
+    password:
+    {
+        type:String,
+        required:true,
+        minlength:[6,"Password should contains 6 characters"]
+    },
+    role:{
+            type:String,
+            enum:["user","admin"],
+            default:"user"
+        },
+    registeredSkills:[
+      {
+        skill: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Skill',
+          required: true
+        },
+        status:{
+            type:String,
+            enum:["registered","withdrew"],
+            default:"registered"
+        },
+        level: {
+        type: String,
+        enum: ["beginner", "intermediate", "advanced"],
+        default: "beginner"
+        },
+        tests:[{type: mongoose.Schema.Types.ObjectId, ref: 'Attempt'}],
+        // score: { type: Number, default: 0 },
+        // quizzesTaken: { type: Number, default: 0 },
+        // correctAnswers: { type: Number, default: 0 },
+        // totalQuestions: { type: Number, default: 0 },
+        lastUpdated: { type: Date, default: Date.now }}]
+},
+{
+    timestamps:true
+})
+
+module.exports = mongoose.model('User',userSchema)
+
+auth.middleware.js
+let jwt = require('jsonwebtoken')
+
+let userSchema = require('../models/user.model.js')
+
+exports.protectedRoute = async(req,res,next)=>{
+try{
+    let token = req.cookies.token
+    if(!token)
+    {
+        return res.status(401).json({msg:"user not logged in"})
+    }
+    let decode;
+    try {
+      decode = jwt.verify(token, process.env.SECRET);
+    } catch (err) {
+      if (err.name === "TokenExpiredError") {
+        return res.status(401).json({ msg: "Session expired, please log in again" });
+      }
+      return res.status(401).json({ msg: "Invalid token" });
+    }
+    let user = await userSchema.findById(decode.id)
+    if(!user)
+    {
+        return res.status(404).json({msg:"user not found"})
+    }
+    req.user=user;
+    next();
+}
+catch(err)
+{
+    return res.status(500).json({msg:"Internal server error"})
+}
+}
+
+exports.adminOnly = async (req, res, next) => {
+  try {
+    // Check if user info exists (set by protectedRoute)
+    if (!req.user) {
+      return res.status(401).json({ msg: "User not authenticated" });
+    }
+
+    // Check if user is an admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ msg: "Access denied. Admins only." });
+    }
+
+    next();
+  } catch (err) {
+    return res.status(500).json({ msg: "Internal server error" });
+  }
+};
+
+>routes
+admin.route.js
+let express = require('express')
+const {userLoggedIn} = require('../controllers/auth.controller.js')
+const {generateSkillQuestions} = require('../controllers/test.controller.js')
+const {getAllSkills,addSkill,deleteSkill,updateSkill} = require('../controllers/skill.controller.js')
+const {getAdminDashboard} = require('../controllers/admin.controller.js')
+const {getAllUsers,getUserDetails,deleteUser} = require('../controllers/user.controller.js')
+
+let router = express.Router()
+
+router.post('/generateQuestions',generateSkillQuestions)
+router.post('/addSkill',addSkill)
+router.get('/getSkills',getAllSkills)
+router.delete('/deleteSkill/:skillId',deleteSkill)
+router.put('/editSkill/:skillId',updateSkill)
+
+router.get("/dashboard",getAdminDashboard);
+router.get("/users", getAllUsers);
+router.get("/user/:userId", getUserDetails);
+router.delete("/deleteUser/:userId", deleteUser);
+
+module.exports= router;
+
+auth.route.js
+let express = require('express')
+const {register,login,logout,userLoggedIn} = require('../controllers/auth.controller.js')
+const {protectedRoute} = require('../middlewares/auth.middleware.js')
+
+let router = express.Router()
+
+router.post('/register',register)
+router.post('/login',login)
+router.get('/logout',logout)
+router.get('/check',protectedRoute,userLoggedIn)
+module.exports= router 
+
+
+skill.route.js
+let express = require('express');
+
+let {addSkill,getAllSkills,getSkillById} = require('../controllers/skill.controller');
+
+let router = express.Router();
+
+router.post('/addSkill',addSkill)
+router.get('/getSkills',getAllSkills)
+router.get('/getSkill/:skillId',getSkillById)
+
+module.exports = router;
+
+test.route.js
+let express = require('express');
+let {generateSkillQuestions} = require('../controllers/test.controller');
+
+
+let router = express.Router();
+
+router.post('/generateTest',generateSkillQuestions);
+
+module.exports = router;
+
+user.route.js
+let express = require('express')
+
+let{registeredSkill,withdrawSkill} = require('../controllers/user.controller')
+let {randomTestQuestions,submitTest,getTestHistoryBySkill,getAttemptById} = require('../controllers/test.controller');
+let {chatWithGemini,chatHistory} = require('../controllers/chat.controller')
+
+let router = express.Router()
+
+router.post('/skillRegister',registeredSkill)
+router.post('/skillWithdraw',withdrawSkill)
+router.post('/takeTest',randomTestQuestions);
+router.post('/submitTestAnswers',submitTest);
+router.post('/chat', chatWithGemini);
+router.get('/chatHistory', chatHistory);
+router.get('/skill/:skillId/testHistory', getTestHistoryBySkill);
+router.get('/attempt/:attemptId', getAttemptById);
+
+module.exports = router
+
+>lib/db.js
+let mongoose = require('mongoose');
+
+exports.connectDB = async()=>
+    {
+        try{
+            await mongoose.connect(process.env.MONGODB_URI)
+            console.log('Database connected successfully');
+            }
+        catch(err)
+        {
+            console.log("Error in database Connection",err)
+        }
+    }
+
+
+>controllers
+
+admin.controller.js
+let User = require("../models/user.model.js");
+let Skill = require("../models/skill.model.js");
+let Question = require("../models/question.model.js");
+let Attempt = require("../models/testAttempt.model.js"); // if you store test attempts
+
+exports.getAdminDashboard = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const totalSkills = await Skill.countDocuments();
+    const totalQuestions = await Question.countDocuments();
+    const totalAttempts = await Attempt.countDocuments();
+
+    res.json({
+      success: true,
+      data: {
+        totalUsers,
+        totalSkills,
+        totalQuestions,
+        totalAttempts,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Failed to fetch stats" });
+  }
+};
+
+auth.controller.js
+let userSchema = require('../models/user.model.js')
+
+let bcrypt = require('bcrypt')
+let jwt = require('jsonwebtoken')
+
+exports.register = async(req,res) =>{
+    let {name,email,password,role} = req.body;
+    try{
+        let salt = await bcrypt.genSalt(10)
+        let hash = await bcrypt.hash(password,salt)
+        let user = await userSchema.findOne({email})
+        if(user)
+        {
+            return res.status(409).json({msg:'user already existed'})
+        }
+        let userDetails = await userSchema.create({name,email,password:hash,role:role || 'user'})
+        let token = jwt.sign({id:userDetails._id},process.env.SECRET,{expiresIn:'7d'})
+        res.cookie('token',token,
+            {
+                maxAge:7*24*60*60*1000,
+                httpOnly:true,
+                sameSite: "strict"
+            })
+        return res.status(201).json(userDetails)
+    }
+    catch(err)
+    {
+        console.log(err)
+        return res.status(500).json({msg:"internal server error"})
+    }
+}
+
+exports.login = async(req,res) =>{
+    let {email,password} = req.body;
+    try{
+        let user = await userSchema.findOne({email})
+        if(user)
+        {
+            let result = await bcrypt.compare(password,user.password)
+
+            if(result){
+            let token = jwt.sign({id:user._id},process.env.SECRET,{expiresIn:'7d'})
+            res.cookie('token',token,
+            {
+                maxAge:7*24*60*60*1000,
+                httpOnly:true,
+                sameSite: "strict"
+            })
+            return res.status(200).json(user)
+            }
+            else{
+                 return res.status(401).json({msg:"password is incorrect"})
+            }
+        }
+        else
+        {
+         return res.status(401).json({msg:"Invalid Credentials"})   
+        }
+    }
+    catch(err)
+    {
+        console.log(err)
+        return res.status(500).json({msg:"internal server error"})
+    }
+}
+
+exports.logout = async(req,res) =>{
+    try{
+        res.cookie('token','',{maxAge:0})
+        return res.status(200).json({msg:"logged out successfully"})
+    }
+    catch(err)
+    {
+        return res.status(500).json({msg:"Internal server error"})
+    }
+}
+
+exports.userLoggedIn = async(req,res) =>{
+    try{
+        let user = await userSchema.findById(req.user.id).select('-password');
+        if(!user) return res.status(404).json({msg:"User not found"})
+        return res.status(200).json(user)
+    }
+    catch(err)
+    {
+        return res.status(500).json({msg:"Internal server error"})
+    }
+}   
+
+chat.controller.js
+// chat.controller.js
+const axios = require('axios');
+const Chat = require('../models/chat.model');
+
+exports.chatWithGemini = async (req, res) => {
+  const userMessage = req.body.message;
+
+  if (!userMessage) {
+    return res.status(400).json({ message: "Message is required" });
+  }
+
+  try {
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        contents: [{ parts: [{ text: userMessage }] }],
+      },
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    let reply = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "No reply from Gemini.";
+
+    // Clean up Gemini response and structure it
+    reply = reply
+      .replace(/\/\/|[*#`]/g, '')             // remove //, *, #, backticks
+      .replace(/^\s*\d+\.\s*/gm, '-')        // numbered points -> '-'
+      .replace(/\r\n|\r/g, '\n')             // normalize line breaks
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .slice(0, 10)                           // limit to first 10 lines for brevity
+      .join('\n');
+
+    await Chat.create({
+      userId: req.user.id,
+      userMessage,
+      botReply: reply,
+    });
+
+    res.json({ reply });
+
+  } catch (error) {
+    console.error("Gemini Chat Error:", error.response?.data || error.message);
+    res.status(500).json({ message: "Error communicating with Gemini API", error: error.message });
+  }
+};
+
+exports.chatHistory = async (req, res) => {
+  try {
+    const chats = await Chat.find({ userId: req.user.id }).sort({ timestamp: 1 });
+    res.json({ chats });
+  } catch (error) {
+    console.error("Error fetching chat history:", error.message);
+    res.status(500).json({ message: "Error fetching chat history", error: error.message });
+  }
+};
+
+skill.controller.js
+let skillSchema = require('../models/skill.model');
+
+exports.addSkill = async (req, res) => {
+    let {name,description} = req.body;
+    try {
+        let existingSkill = await skillSchema.findOne({name});
+        if(existingSkill) {
+            return res.status(400).json({message: "Skill already exists"});
+        }
+        let newSkill = await skillSchema.create({name,description});
+        return res.status(201).json({message: "Skill added successfully", data: newSkill});
+    } catch (error) {
+        console.error("Error adding skill:", error);
+        return res.status(500).json({message: "Internal Server Error"});
+    }
+}
+
+exports.getSkillById = async (req, res) => {
+  const { skillId } = req.params;
+  try {
+    const skill = await skillSchema.findById(skillId);
+    if (!skill) {
+      return res.status(404).json({ message: 'Skill not found' });
+    }
+    return res.status(200).json({ message: 'Skill fetched successfully', data: skill });
+  } catch (error) {
+    console.error('Error fetching skill:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+exports.getAllSkills = async (req, res) => {
+    try {
+        let skills = await skillSchema.find();
+        return res.status(200).json({message: "Skills retrieved successfully", data: skills});
+    } catch (error) {
+        console.error("Error retrieving skills:", error);
+        return res.status(500).json({message: "Internal Server Error"});
+    }
+}
+
+exports.deleteSkill = async (req, res) => {
+    let {skillId} = req.params;
+    try {
+        let deletedSkill = await skillSchema.findByIdAndDelete(skillId);
+        if (!deletedSkill) {
+            return res.status(404).json({message: "Skill not found"});
+        }
+        res.status(200).json({message: "Skill deleted successfully", data: deletedSkill});
+    } catch (error) {
+        console.error("Error deleting skill:", error);
+        res.status(500).json({message: "Internal Server Error"});
+    }
+}
+
+exports.updateSkill = async (req, res) => {
+    let {skillId} = req.params;
+    let {name, description} = req.body;
+    try {
+        let updatedSkill = await skillSchema.findByIdAndUpdate(skillId, {name, description}, {new: true});
+        if (!updatedSkill) {
+            return res.status(404).json({message: "Skill not found"});
+        }
+        return res.status(200).json({message: "Skill updated successfully", data: updatedSkill});
+    } catch (error) {
+        console.error("Error updating skill:", error);
+        return res.status(500).json({message: "Internal Server Error"});
+    }
+}
+
+test.controller.js
+require("dotenv").config();
+
+const mongoose = require("mongoose");
+const Skill = require("../models/skill.model");
+const User = require("../models/user.model");
+const Attempt = require("../models/testAttempt.model.js");
+const Question = require("../models/question.model");
+const skillSchema = require('../models/skill.model');
+
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+const normalizeQuestion = (q) => {
+  const cleanedOptions = q.options.map(opt =>
+    opt.replace(/^[A-Da-d]\.\s*/, "").trim()
+  );
+
+  let correct = q.correctAnswer;
+
+  // if AI returned letter (A-D), convert to option text
+  if (/^[A-Da-d]$/.test(correct)) {
+    const idx = correct.toUpperCase().charCodeAt(0) - 65;
+    correct = cleanedOptions[idx] || correct;
+  } else {
+    correct = correct.replace(/^[A-Da-d]\.\s*/, "").trim();
+  }
+
+  return {
+    ...q,
+    options: cleanedOptions,
+    correctAnswer: correct
+  };
+};
+
+exports.generateSkillQuestions = async (req, res) => {
+  try {
+    const { skillId, level } = req.body;
+
+    if (!skillId || !level) {
+      return res.status(400).json({ message: "skillId and level are required" });
+    }
+
+    const skill = await skillSchema.findById(skillId);
+    if (!skill || !skill.name) {
+      return res.status(404).json({ message: "Skill not found or missing name" });
+    }
+
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `
+      Generate 60 multiple-choice questions for the skill "${skill.name}" at "${level}" level.
+      Each question must have:
+        - A mainTopic (general category, e.g., "Machine Learning" or "OOP Concepts")
+        - A subTopic (specific subcategory, e.g., "Training vs Testing" or "Polymorphism")
+        - A clearly defined topic
+        - 4 options (A, B, C, D) but answers should be text values
+        - The correct answer (write the actual text of the correct option, not just "A" or "B")
+      Return strictly valid JSON ONLY. Do NOT include markdown, code fences, or any explanation.
+
+      Format:
+      [
+        {
+          "mainTopic": "string",
+          "subTopic": "string",
+          "topic": "string",
+          "question": "string",
+          "options": ["A","B","C","D"], 
+          "correctAnswer": "string" 
+        }
+      ]
+    `;
+
+    const result = await model.generateContent(prompt);
+    const rawText = result.response?.text?.() || "";
+
+    const sanitizeJson = (text) => {
+      return text
+        .replace(/```json|```/g, "")
+        .replace(/,\s*}/g, '}')
+        .replace(/,\s*]/g, ']')
+        .replace(/[\u0000-\u001F]+/g, '')
+        .trim();
+    };
+
+    const cleanedText = sanitizeJson(rawText);
+
+    let questions;
+    try {
+      questions = JSON.parse(cleanedText);
+    } catch (err) {
+      return res.status(500).json({ message: "AI returned invalid JSON", error: err.message });
+    }
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(500).json({ message: "AI did not generate any questions" });
+    }
+
+    // Normalize + attach skill and level
+    questions = questions.map(q => {
+      const normalized = normalizeQuestion(q);
+      return { ...normalized, skill: skillId, level };
+    });
+
+    // Remove duplicates
+    const existingQuestions = await Question.find({ skill: skillId, level }).select("question");
+    const existingTexts = existingQuestions.map(q => q.question);
+
+    const filteredQuestions = questions.filter(q => !existingTexts.includes(q.question));
+
+    if (filteredQuestions.length === 0) {
+      return res.status(200).json({ message: "No new questions; all duplicates" });
+    }
+
+    const saved = await Question.insertMany(filteredQuestions);
+
+    res.status(201).json({
+      message: "AI-generated questions saved successfully",
+      totalGenerated: questions.length,
+      totalAdded: saved.length,
+      data: saved
+    });
+
+  } catch (err) {
+    console.error("AI generation error:", err);
+    res.status(500).json({
+      message: "Failed to generate questions",
+      error: err.message,
+      details: err.errorDetails || null
+    });
+  }
+};
+
+exports.randomTestQuestions = async (req, res) => {
+  try {
+    const { skillId, level } = req.body;
+
+    if (!skillId || !level) {
+      return res.status(400).json({ message: "skillId and level are required" });
+    }
+
+    // Check if user has registered this skill
+    const user = await User.findById(req.user._id);
+    const isRegistered = user.registeredSkills.some(
+      (s) => s.skill.toString() === skillId && s.status === "registered"
+    );
+    if (!isRegistered) {
+      return res.status(403).json({ message: "You must register this skill before attempting the test." });
+    }
+
+    const skillObjectId = new mongoose.Types.ObjectId(skillId);
+    const skill = await Skill.findById(skillObjectId);
+    if (!skill) {
+      return res.status(404).json({ message: "Skill not found" });
+    }
+
+    // Pick 50 random questions
+    const questions = await Question.aggregate([
+      { $match: { skill: skillObjectId, level } },
+      { $sample: { size: 50 } }
+    ]);
+
+    if (!questions.length) {
+      return res.status(404).json({ message: "No questions found for this skill/level" });
+    }
+
+    // Save Attempt with question references
+    const attempt = await Attempt.create({
+      user: req.user._id,
+      skill: skillObjectId,
+      level,
+      totalQuestions: questions.length,
+      questions: questions.map(q => ({ questionId: q._id }))
+    });
+
+    // Return questions without correct answers
+    res.status(200).json({
+      message: "Random test questions retrieved successfully",
+      attemptId: attempt._id,
+      data: questions.map(q => ({
+        _id: q._id,
+        question: q.question,
+        options: q.options,
+        answer: q.correctAnswer,
+        mainTopic: q.mainTopic,
+        subTopic: q.subTopic,
+        topic: q.topic,
+        level: q.level,
+      }))
+    });
+  } catch (err) {
+    console.error("Random test error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+const { getYoutubeVideos } = require('../youtubeServices.js')
+
+exports.submitTest = async (req, res) => {
+  try {
+    const { attemptId, answers } = req.body;
+
+    if (!attemptId || typeof answers !== 'object') {
+      return res.status(400).json({ message: "Missing or invalid attemptId and answers" });
+    }
+
+    const attempt = await Attempt.findById(attemptId).populate({
+      path: "questions.questionId",
+      select: "correctAnswer topic subTopic"
+    });
+
+    if (!attempt) {
+      return res.status(404).json({ message: "We couldn’t find that test attempt" });
+    }
+
+    if (attempt.submitted) {
+      return res.status(400).json({ message: "This test has already been submitted" });
+    }
+
+    // Evaluate answers
+    attempt.questions.forEach(q => {
+      const userAnswer = answers[q.questionId._id.toString()] ?? null;
+      q.selectedAnswer = userAnswer;
+      q.isCorrect = userAnswer &&
+        q.questionId.correctAnswer &&
+        userAnswer.trim().toLowerCase() === q.questionId.correctAnswer.trim().toLowerCase();
+    });
+
+    attempt.correctAnswers = attempt.questions.filter(q => q.isCorrect).length;
+    attempt.totalQuestions = attempt.questions.length;
+    attempt.score = Math.round((attempt.correctAnswers / attempt.totalQuestions) * 100);
+
+    // Identify weak topics
+    const weakTopicsSet = new Set();
+    attempt.questions.forEach(q => {
+      if (!q.isCorrect) {
+        const subTopic = q.questionId.subTopic?.trim();
+        const topic = q.questionId.topic?.trim();
+        if (subTopic) weakTopicsSet.add(subTopic);
+        else if (topic) weakTopicsSet.add(topic);
+      }
+    });
+
+    attempt.weakTopics = Array.from(weakTopicsSet);
+
+    // Fetch skill name for YouTube search
+    const skillDoc = await Skill.findById(attempt.skill);
+    const skillName = skillDoc?.name || "Skill";
+
+    const language = 'en';
+    // Suggest videos for weak areas
+    attempt.youtubeVideoLinks = await getYoutubeVideos(skillName, attempt.weakTopics,language);
+
+    attempt.submitted = true;
+    await attempt.save();
+
+    res.status(200).json({
+      message: "Your test has been submitted successfully",
+      score: attempt.score,
+      correctAnswers: attempt.correctAnswers,
+      totalQuestions: attempt.totalQuestions,
+      weakTopics: attempt.weakTopics,
+      youtubeVideoLinks: attempt.youtubeVideoLinks
+    });
+
+  } catch (err) {
+    // console.log("Submit test error:", err.response?.data || err.message);
+    res.status(500).json({
+      message: "Something went wrong while submitting your test",
+      error: err.message
+    });
+  }
+};
+
+exports.getTestHistoryBySkill = async (req, res) => {
+  try {
+    const { skillId } = req.params;
+    const userId = req.user._id;
+
+    if (!skillId) {
+      return res.status(400).json({ message: "Skill ID is required" });
+    }
+
+    // Fetch all submitted attempts for this user and skill
+    const attempts = await Attempt.find({ skill: skillId, user: userId, submitted: true })
+      .populate({
+        path: "questions.questionId",
+        select: "question mainTopic subTopic topic options correctAnswer"
+      })
+      .populate({
+        path: "skill",
+        select: "name description"
+      })
+      .sort({ takenAt: -1 }); // latest first
+
+    res.status(200).json({ attempts });
+
+  } catch (err) {
+    console.error("Error fetching test history:", err);
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
+  }
+};
+
+exports.getAttemptById = async (req, res) => {
+  try {
+    const { attemptId } = req.params;
+    // const userId = req.user._id;
+
+    if (!attemptId) {
+      return res.status(400).json({ message: "Attempt ID is required" });
+    }
+
+    // Fetch attempt with questions and selected options
+    const attempt = await Attempt.findOne({ _id: attemptId})
+      .populate({
+        path: 'questions.questionId',
+        select: 'question options correctAnswer topic subTopic',
+      });
+
+    if (!attempt) return res.status(404).json({ message: "Attempt not found" });
+
+    res.status(200).json({ attempt });
+  } catch (err) {
+    console.error("Error fetching attempt:", err);
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
+  }
+};
+
+usercontroller.js
+let userSchema = require('../models/user.model')
+let skillSchema = require('../models/skill.model')
+let Attempt = require('../models/testAttempt.model')
+
+
+require('dotenv').config();
+
+exports.registeredSkill = async (req, res) => {
+    try {
+        const { skill, level } = req.body;
+
+        let user = await userSchema.findById(req.user.id);
+        let findSkill = await skillSchema.findById(skill);
+
+        if (!findSkill) {
+            return res.status(404).json({ message: "Skill not found" });
+        }
+
+        let existingSkill = user.registeredSkills.find(s => s.skill.toString() === findSkill.id);
+
+        if (existingSkill && existingSkill.status === 'registered') {
+            return res.status(400).json({ message: "Skill already registered" });
+        }
+
+        if (existingSkill && existingSkill.status === 'withdraw') {
+            existingSkill.status = 'registered';
+            existingSkill.level = level;
+        } else {
+            user.registeredSkills.push({ skill, level, status: "registered" });
+        }
+
+        // Add user to skill's registeredUsers if not already present
+        if (!findSkill.registeredUsers.includes(req.user.id)) {
+            findSkill.registeredUsers.push(req.user.id);
+        }
+
+        await user.save();
+        await findSkill.save();
+
+        res.status(200).json({ message: "Skill registered successfully" });
+
+    } catch (error) {
+        res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+};
+
+exports.withdrawSkill = async (req, res) => {
+    try {
+        const { skillId } = req.body;
+        const userId = req.user.id;
+
+        if (!skillId) return res.status(400).json({ message: "Skill ID is required" });
+
+        // Update user (mark skill as withdrawn)
+        await userSchema.findByIdAndUpdate(
+            userId,
+            { $set: { "registeredSkills.$[elem].status": "withdraw" } },
+            { arrayFilters: [{ "elem.skill": skillId }] }
+        );
+
+        // Update skill (remove user from registeredUsers)
+        await skillSchema.findByIdAndUpdate(
+            skillId,
+            { $pull: { registeredUsers: userId } }
+        );
+
+        res.json({ message: "Skill withdrawn successfully" });
+
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.getAllUsers = async (req, res) => {
+    try {
+        const users = await userSchema.find().select('-password');
+        res.status(200).json({ success: true, data: users }); // wrap in 'data'
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+    }
+};
+
+exports.getUserDetails = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    // Fetch user with registered skills
+    const user = await userSchema.findById(userId)
+      .select('-password')
+      .populate({
+        path: 'registeredSkills.skill',
+        select: 'name description',
+      });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Compute stats per skill
+    const skillStats = await Promise.all(
+      user.registeredSkills.map(async (regSkill) => {
+        const skillId = regSkill.skill._id;
+        const attempts = await Attempt.find({ user: userId, skill: skillId, submitted: true });
+
+        const totalTests = attempts.length;
+        const avgScore = totalTests > 0
+          ? attempts.reduce((sum, a) => sum + (a.score || 0), 0) / totalTests
+          : 0;
+        const maxScore = totalTests > 0
+          ? Math.max(...attempts.map(a => a.score || 0))
+          : 0;
+
+        return {
+          skillId,
+          skillName: regSkill.skill.name,
+          level: regSkill.level,
+          status: regSkill.status,
+          totalTests,
+          avgScore: Number(avgScore.toFixed(2)),
+          maxScore,
+        };
+      })
+    );
+
+    res.json({
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        registeredSkills: skillStats,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await userSchema.findByIdAndDelete(userId);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    res.status(200).json({ success: true, message: "User deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+yotubeServices.js
+const axios = require('axios');
+
+async function getYoutubeVideos(skillName, weakTopics ,language) {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) throw new Error("Missing YouTube API key");
+
+  const results = [];
+
+  for (const topic of weakTopics) {
+    try {
+      const response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+        params: {
+          part: 'snippet',
+          q: `${skillName} ${topic} tutorial`,
+          type: 'video',
+          maxResults: 3,
+          relevanceLanguage: language,
+          key: apiKey
+        }
+      });
+
+      const links = response.data.items?.map(item =>
+        `https://www.youtube.com/watch?v=${item.id.videoId}`
+      ) || [];
+
+      results.push({ topic, links });
+    } catch (err) {
+      console.error(`YouTube fetch failed for topic "${topic}":`, err.response?.data || err.message);
+      results.push({ topic, links: [] });
+    }
+  }
+
+  return results;
+}
+
+module.exports = { getYoutubeVideos };

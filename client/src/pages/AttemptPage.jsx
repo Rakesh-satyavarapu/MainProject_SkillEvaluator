@@ -21,7 +21,6 @@ const AttemptPage = () => {
 
   const { questions, level, score, takenAt, youtubeVideoLinks = [] } = attempt;
 
-  // ✅ Identify wrong answers (weak topics)
   const weakQuestions = questions.filter((q) => !q.isCorrect);
   const weakTopics = youtubeVideoLinks.filter((yt) =>
     weakQuestions.some(
@@ -32,8 +31,174 @@ const AttemptPage = () => {
   );
 
   return (
-    <div className="container mt-5 mb-5">
-      <h2 className="mb-3 text-center fw-bold">Attempt Details</h2>
+    <div className="attempt-container">
+      <style>
+        {`
+          .attempt-container {
+            max-width: 1400px; /* increased from 1100px */
+            margin: 60px auto;
+            padding: 45px;
+            background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+            border-radius: 24px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+          }
+
+          .attempt-container h2 {
+            text-align: center;
+            font-weight: 800;
+            font-size: 2rem;
+            color: #1e293b;
+            margin-bottom: 25px;
+          }
+
+          .attempt-container p {
+            color: #374151;
+            font-size: 1.05rem;
+            margin-bottom: 8px;
+          }
+
+          .list-group {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+          }
+
+          .list-group-item {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 18px;
+            padding: 22px 28px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease, box-shadow 0.3s ease;
+          }
+
+          .list-group-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+          }
+
+          .list-group-item strong {
+            color: #1e293b;
+          }
+
+          ul {
+            list-style: none;
+            padding-left: 15px;
+            margin-top: 12px;
+          }
+
+          ul li {
+            margin-bottom: 6px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: background 0.2s ease;
+          }
+
+          ul li:hover {
+            background: rgba(0,0,0,0.05);
+          }
+
+          .text-success {
+            color: #16a34a !important;
+            font-weight: 600;
+          }
+
+          .text-danger {
+            color: #dc2626 !important;
+            font-weight: 600;
+          }
+
+          .fw-bold {
+            font-weight: 700;
+          }
+
+          .weak-topics-section {
+            margin-top: 60px;
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+          }
+
+          .weak-topics-section h4 {
+            text-align: center;
+            font-weight: 800;
+            font-size: 1.6rem;
+            color: #dc2626;
+            margin-bottom: 35px;
+          }
+
+          .topic-card {
+            background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+            border-radius: 18px;
+            padding: 28px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+          }
+
+          .topic-card h5 {
+            color: #2563eb;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+          }
+
+          .video-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+          }
+
+          @media (max-width: 992px) {
+            .video-grid {
+              grid-template-columns: repeat(2, 1fr);
+            }
+          }
+
+          @media (max-width: 600px) {
+            .video-grid {
+              grid-template-columns: 1fr;
+            }
+          }
+
+          iframe {
+            border-radius: 14px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.2);
+          }
+
+          @media (max-width: 768px) {
+            .attempt-container {
+              padding: 20px;
+            }
+
+            .list-group-item {
+              padding: 16px;
+            }
+
+            .topic-card h5 {
+              font-size: 1rem;
+            }
+          }
+
+          @media (max-width: 480px) {
+            .attempt-container h2 {
+              font-size: 1.5rem;
+            }
+
+            ul li {
+              font-size: 0.9rem;
+            }
+
+            p, strong {
+              font-size: 0.9rem;
+            }
+          }
+        `}
+      </style>
+
+      <h2>Attempt Details</h2>
       <p><strong>Date:</strong> {new Date(takenAt).toLocaleString()}</p>
       <p><strong>Level:</strong> {level}</p>
       <p><strong>Score:</strong> {score}%</p>
@@ -74,29 +239,15 @@ const AttemptPage = () => {
           ))}
       </div>
 
-      {/* ✅ Weak Topics with Embedded YouTube Videos */}
       {weakTopics.length > 0 && (
-        <>
-          <hr />
-          <h4 className="mt-4 mb-3 text-center text-danger">
-            Weak Topics & Recommended YouTube Videos
-          </h4>
-          <div className="d-flex flex-column gap-4">
+        <div className="weak-topics-section">
+          <h4>Weak Topics & Recommended YouTube Videos</h4>
+          <div className="d-flex flex-column gap-5">
             {weakTopics.map((topic, index) => (
-              <div
-                key={index}
-                className="p-3 border rounded-3 shadow-sm bg-light"
-              >
-                <h5 className="fw-bold mb-3 text-primary">{topic.topic}</h5>
+              <div key={index} className="topic-card">
+                <h5>{topic.topic}</h5>
 
-                {/* 🎥 Video Grid (2 per row on large screens) */}
-                <div
-                  className="d-grid gap-3"
-                  style={{
-                    gridTemplateColumns:
-                      'repeat(auto-fit, minmax(320px, 1fr))',
-                  }}
-                >
+                <div className="video-grid">
                   {topic.links.map((link, i) => {
                     const embedUrl = link.replace('watch?v=', 'embed/');
                     return (
@@ -104,10 +255,9 @@ const AttemptPage = () => {
                         key={i}
                         style={{
                           position: 'relative',
-                          paddingBottom: '56.25%', // 16:9 Aspect Ratio
+                          paddingBottom: '56.25%',
                           height: 0,
                           overflow: 'hidden',
-                          borderRadius: '12px',
                         }}
                       >
                         <iframe
@@ -122,7 +272,6 @@ const AttemptPage = () => {
                             left: 0,
                             width: '100%',
                             height: '100%',
-                            borderRadius: '12px',
                           }}
                         ></iframe>
                       </div>
@@ -132,7 +281,7 @@ const AttemptPage = () => {
               </div>
             ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

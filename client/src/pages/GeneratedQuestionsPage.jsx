@@ -13,6 +13,32 @@ const GeneratedQuestionsPage = () => {
         <button className="btn btn-secondary mt-3" onClick={() => navigate('/admin/skills')}>
           ⬅️ Back to Skills
         </button>
+
+        <style>{`
+          .container {
+            padding: 15px;
+            max-width: 900px;
+            margin: auto;
+          }
+          h4 {
+            font-size: 1.3rem;
+            color: #555;
+          }
+          .btn {
+            padding: 8px 16px;
+            font-size: 0.95rem;
+          }
+
+          @media (max-width: 768px) {
+            h4 {
+              font-size: 1.1rem;
+            }
+            .btn {
+              padding: 6px 12px;
+              font-size: 0.9rem;
+            }
+          }
+        `}</style>
       </div>
     );
   }
@@ -58,6 +84,80 @@ const GeneratedQuestionsPage = () => {
           </div>
         ))}
       </div>
+
+      <style>{`
+        .container {
+          padding: 15px;
+          max-width: 900px;
+          margin: auto;
+        }
+
+        h3 {
+          font-size: 1.8rem;
+          color: #333;
+        }
+
+        .btn-outline-primary {
+          padding: 8px 16px;
+          font-size: 0.95rem;
+        }
+
+        .alert-success {
+          background-color: #e6ffed;
+          color: #276749;
+          border: 1px solid #c6f6d5;
+          padding: 12px 20px;
+          border-radius: 8px;
+        }
+
+        .card {
+          border-radius: 12px;
+          transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+          transform: translateY(-3px);
+        }
+
+        h5 {
+          font-size: 1.1rem;
+          color: #222;
+        }
+
+        ul {
+          padding-left: 20px;
+        }
+
+        li {
+          margin-bottom: 6px;
+        }
+
+        p.text-success {
+          font-weight: 500;
+        }
+
+        p.text-muted {
+          font-size: 0.85rem;
+          color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+          h3 {
+            font-size: 1.5rem;
+          }
+          h5 {
+            font-size: 1rem;
+          }
+          .btn-outline-primary {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+          }
+          .alert-success {
+            font-size: 0.9rem;
+            padding: 10px 15px;
+          }
+        }
+      `}</style>
     </div>
   );
 };

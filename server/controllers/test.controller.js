@@ -216,7 +216,7 @@ exports.submitTest = async (req, res) => {
       return res.status(400).json({ message: "This test has already been submitted" });
     }
 
-    // Evaluate answers
+    // ✅ Evaluate answers
     attempt.questions.forEach(q => {
       const userAnswer = answers[q.questionId._id.toString()] ?? null;
       q.selectedAnswer = userAnswer;
@@ -229,7 +229,7 @@ exports.submitTest = async (req, res) => {
     attempt.totalQuestions = attempt.questions.length;
     attempt.score = Math.round((attempt.correctAnswers / attempt.totalQuestions) * 100);
 
-    // Identify weak topics
+    // ✅ Identify weak topics
     const weakTopicsSet = new Set();
     attempt.questions.forEach(q => {
       if (!q.isCorrect) {
@@ -242,16 +242,28 @@ exports.submitTest = async (req, res) => {
 
     attempt.weakTopics = Array.from(weakTopicsSet);
 
-    // Fetch skill name for YouTube search
+    // ✅ Fetch skill name for YouTube search
     const skillDoc = await Skill.findById(attempt.skill);
     const skillName = skillDoc?.name || "Skill";
 
     const language = 'en';
-    // Suggest videos for weak areas
-    attempt.youtubeVideoLinks = await getYoutubeVideos(skillName, attempt.weakTopics,language);
+    attempt.youtubeVideoLinks = await getYoutubeVideos(skillName, attempt.weakTopics, language);
 
     attempt.submitted = true;
     await attempt.save();
+
+    if (attempt.score >= 75) {
+      const user = await User.findById(attempt.user); // assuming attempt.user stores the user ID
+
+      const regSkill = user.registeredSkills.find(s => s.skill.toString() === attempt.skill.toString());
+      if (regSkill) {
+        if (regSkill.level === "beginner") regSkill.level = "intermediate";
+        else if (regSkill.level === "intermediate") regSkill.level = "advanced";
+        regSkill.lastUpdated = new Date();
+        await user.save();
+      }
+    }
+
 
     res.status(200).json({
       message: "Your test has been submitted successfully",
@@ -263,7 +275,6 @@ exports.submitTest = async (req, res) => {
     });
 
   } catch (err) {
-    console.log("Submit test error:", err.response?.data || err.message);
     res.status(500).json({
       message: "Something went wrong while submitting your test",
       error: err.message

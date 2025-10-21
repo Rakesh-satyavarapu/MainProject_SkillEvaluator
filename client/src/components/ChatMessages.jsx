@@ -26,14 +26,14 @@ const ChatMessages = () => {
           {/* User Message */}
           <div className="flex justify-end">
             <div className="bg-blue-500 text-black px-4 py-2 rounded-2xl max-w-[70%] break-words">
-              {chat.userMessage}
+              <b>{chat.userMessage}</b>
             </div>
           </div>
 
           {/* Bot Reply */}
           <div className="flex justify-start">
-            <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-2xl max-w-[70%] break-words border">
-              {chat.botReply}
+            <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-2xl max-w-[70%] break-words ">
+              <span>🤖 :</span>{chat.botReply}
             </div>
           </div>
         </div>

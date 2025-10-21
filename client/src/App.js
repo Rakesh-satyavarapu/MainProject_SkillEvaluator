@@ -20,9 +20,10 @@ import UserDetails from './pages/UserDetails';
 import RegisteredUsers from './pages/RegisteredUsers';
 import GeneratedQuestionsPage from './pages/GeneratedQuestionsPage';
 
-
 import {Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
+import AdminContact from './pages/AdminContact';
+import Profile from './pages/Profile';
 
 function App() {
   const {authUser,checkAuth,isAdmin} = useAuthStore();
@@ -38,7 +39,9 @@ function App() {
       <Route path='/register' element={!authUser ? <Register />: <Navigate to='/' />} />
       <Route path='/assist' element={authUser ? <Assist /> : <Navigate to='/login' />} />
       <Route path="/skills" element={authUser ? <SkillBoard /> : <Navigate to="/login" />}/>
-      
+      <Route path="/request" element={authUser ? <AdminContact /> : <Navigate to="/login" />} />
+      <Route path="/profile" element={authUser ? <Profile /> : <Navigate to="/login" />} />
+
       <Route path="/skill/:skillId" element={authUser ? <SkillDetailPage /> : <Navigate to="/login" />} />
       <Route path="/test/:skillId" element={authUser ? <SkillTestPage /> : <Navigate to="/login" />} />
       <Route path="/result/:skillId" element={authUser ? <TestResultPage /> : <Navigate to="/login" />} />
