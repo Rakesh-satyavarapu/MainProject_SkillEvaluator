@@ -6,17 +6,19 @@ import toast from "react-hot-toast";
 export const useAuthStore = create(
   persist(
     (set, get) => ({
+      // 🔹 AUTH STATE
       authUser: null,
       isSigningUp: false,
       isLoggedIn: false,
       isCheckingAuth: true,
 
+      // 🔹 AUTH ACTIONS
       checkAuth: async () => {
         try {
           const res = await axiosInstance.get("/auth/check");
           set({ authUser: res.data });
         } catch (error) {
-          console.log("error in checking auth", error);
+          console.error("Error in checking auth:", error);
           set({ authUser: null });
         } finally {
           set({ isCheckingAuth: false });
@@ -70,7 +72,42 @@ export const useAuthStore = create(
         const user = get().authUser;
         return user?.role === "admin";
       },
+
+      // 🔹 DASHBOARD STATS
+      stats: {
+        totalUsers: 0,
+        totalSkills: 0,
+        totalQuestions: 0,
+        totalAttempts: 0,
+      },
+      isLoading: false,
+
+      fetchDashboardStats: async () => {
+        set({ isLoading: true });
+        try {
+          const res = await axiosInstance.get("/auth/homeDetails");
+
+          // ✅ handle flexible response format
+          const data = res.data.data || res.data;
+
+          set({
+            stats: {
+              totalUsers: data.totalUsers || 0,
+              totalSkills: data.totalSkills || 0,
+              totalQuestions: data.totalQuestions || 0,
+              totalAttempts: data.totalAttempts || 0,
+            },
+          });
+        } catch (error) {
+          console.error("Error fetching dashboard stats:", error);
+          toast.error("Failed to load dashboard stats");
+        } finally {
+          set({ isLoading: false });
+        }
+      },
     }),
-    { name: "auth-storage" } // stored in localStorage
+    {
+      name: "auth-storage", // persisted in localStorage
+    }
   )
 );

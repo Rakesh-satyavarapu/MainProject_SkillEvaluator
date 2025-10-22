@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import toast from "react-hot-toast";
 
@@ -222,6 +223,7 @@ const Login = () => {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Enter Password"
         />
+        <Link to="/forgotPassword">Forgot Password?</Link>
         <button type="submit">Login</button>
       </form>
     </div>

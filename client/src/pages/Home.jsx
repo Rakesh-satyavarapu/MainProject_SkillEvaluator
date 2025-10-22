@@ -1,32 +1,37 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 
 const Home = () => {
-  const { authUser } = useAuthStore();
+  const { authUser, stats, fetchDashboardStats, isLoading } = useAuthStore();
+
+  // ✅ Only fetch once when component mounts
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []); // removed from dependency array to prevent infinite loop
 
   const features = [
     {
       icon: '🎯',
       title: 'Adaptive Testing',
-      description: 'AI-powered quizzes that adapt to your skill level'
+      description: 'AI-powered quizzes that adapt to your skill level',
     },
     {
       icon: '📊',
       title: 'Performance Analytics',
-      description: 'Detailed insights into your learning progress'
+      description: 'Detailed insights into your learning progress',
     },
     {
       icon: '🤖',
       title: 'AI Assistant',
-      description: 'Get help and explanations from our AI tutor'
+      description: 'Get help and explanations from our AI tutor',
     },
     {
       icon: '🏆',
       title: 'Achievement System',
-      description: 'Earn badges and track your accomplishments'
-    }
+      description: 'Earn badges and track your accomplishments',
+    },
   ];
 
   return (
@@ -76,16 +81,23 @@ const Home = () => {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="stats-grid"
           >
+            {/* ✅ Show loader or actual stats */}
             <div className="stat">
-              <div className="stat-number blue">10K+</div>
-              <div className="stat-label">Active Learners</div>
+              <div className="stat-number blue">
+                {isLoading ? '...' : stats.totalUsers}
+              </div>
+              <div className="stat-label">Total Learners</div>
             </div>
             <div className="stat">
-              <div className="stat-number purple">500+</div>
-              <div className="stat-label">Quizzes Available</div>
+              <div className="stat-number purple">
+                {isLoading ? '...' : stats.totalSkills}
+              </div>
+              <div className="stat-label">Skills Available</div>
             </div>
             <div className="stat">
-              <div className="stat-number green">95%</div>
+              <div className="stat-number green">
+                {isLoading ? '...' : '95%'}
+              </div>
               <div className="stat-label">Success Rate</div>
             </div>
           </motion.div>

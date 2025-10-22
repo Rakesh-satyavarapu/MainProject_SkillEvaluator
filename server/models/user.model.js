@@ -27,6 +27,8 @@ const userSchema = mongoose.Schema({
             enum:["user","admin"],
             default:"user"
         },
+    verifyOtp: { type: String, default: '' },
+    verifyOtpExpiresAt: { type: Number, default: 0 },
     registeredSkills:[
       {
         skill: {

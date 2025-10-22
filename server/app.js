@@ -5,6 +5,7 @@ let adminRoutes = require('./routes/admin.route.js')
 let userRoutes = require('./routes/user.route.js')
 let skillRoutes = require('./routes/skill.route.js')
 let testRoutes = require('./routes/test.route.js')
+let forgotPassRoutes = require('./routes/forgotPass.router.js')
 
 const {protectedRoute,adminOnly} = require('./middlewares/auth.middleware.js')
 const cookieParser = require('cookie-parser');
@@ -30,7 +31,7 @@ app.use('/user',protectedRoute,userRoutes)
 app.use('/admin',protectedRoute,adminOnly,adminRoutes)
 app.use('/skill',skillRoutes)
 app.use('/test',testRoutes)
-
+app.use('/api',forgotPassRoutes)
 
 let PORT = process.env.PORT || 5000
 app.listen(PORT,()=>{
