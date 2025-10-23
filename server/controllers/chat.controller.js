@@ -1,6 +1,5 @@
-// chat.controller.js
+const Chat = require('../models/chat.model.js');
 const axios = require('axios');
-const Chat = require('../models/chat.model');
 
 exports.chatWithGemini = async (req, res) => {
   const userMessage = req.body.message;
