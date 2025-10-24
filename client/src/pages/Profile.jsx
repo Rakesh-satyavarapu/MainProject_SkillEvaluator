@@ -14,7 +14,7 @@ const Profile = () => {
         if (!authUser) {
           await checkAuth();
         }
-        const res = await axiosInstance.get(`/user/${authUser?._id}`);
+        const res = await axiosInstance.get(`/user/uid/${authUser?._id}`);
         setUserDetails(res.data.user);
       } catch (error) {
         console.error(error);

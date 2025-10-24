@@ -27,6 +27,10 @@ app.use(cors({
     credentials: true
 }))
 
+// app.use(cors({
+//     origin: 'http://localhost:3000',
+//     credentials: true
+// }))
 
 app.use('/auth',authRoutes)
 app.use('/user',protectedRoute,userRoutes)
@@ -35,9 +39,10 @@ app.use('/skill',skillRoutes)
 app.use('/test',testRoutes)
 app.use('/api',forgotPassRoutes)
 
-app.use(express.static(path.join(__dirname, 'build')));
-
-app.get('*', (req, res) => {
+app.use((req, res, next) => {
+  if (req.path.startsWith('/auth') || req.path.startsWith('/user') || req.path.startsWith('/skill') || req.path.startsWith('/test') || req.path.startsWith('/api')) {
+    return next();
+  }
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 

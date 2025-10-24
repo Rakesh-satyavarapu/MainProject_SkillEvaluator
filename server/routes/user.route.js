@@ -14,6 +14,6 @@ router.post('/chat', chatWithGemini);
 router.get('/chatHistory', chatHistory);
 router.get('/skill/:skillId/testHistory', getTestHistoryBySkill);
 router.get('/attempt/:attemptId', getAttemptById);
-router.get("/:userId", getUserDetails);
+router.get("/uid/:userId", getUserDetails);
 
 module.exports = router
