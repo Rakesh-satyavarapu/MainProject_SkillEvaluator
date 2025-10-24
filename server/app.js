@@ -13,6 +13,7 @@ const cookieParser = require('cookie-parser');
 let express = require('express');
 let app = express();
 let cors = require('cors')
+let path = require('path');
 
 let dotenv = require('dotenv')
 dotenv.config()
