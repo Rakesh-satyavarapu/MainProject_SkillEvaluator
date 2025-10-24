@@ -22,9 +22,16 @@ app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
 
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: 'https://skillsevaluator.onrender.com',
     credentials: true
 }))
+
+app.use(express.static(path.join(__dirname, 'build')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
 
 app.use('/auth',authRoutes)
 app.use('/user',protectedRoute,userRoutes)

@@ -19,7 +19,8 @@ exports.register = async(req,res) =>{
             {
                 maxAge:7*24*60*60*1000,
                 httpOnly:true,
-                sameSite: "strict"
+                sameSite: "none",
+                secure: true
             })
         return res.status(201).json(userDetails)
     }
@@ -44,7 +45,8 @@ exports.login = async(req,res) =>{
             {
                 maxAge:7*24*60*60*1000,
                 httpOnly:true,
-                sameSite: "strict"
+                sameSite: "none",
+                secure: true
             })
             return res.status(200).json(user)
             }
