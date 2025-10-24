@@ -27,12 +27,6 @@ app.use(cors({
     credentials: true
 }))
 
-app.use(express.static(path.join(__dirname, 'build')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
-
 
 app.use('/auth',authRoutes)
 app.use('/user',protectedRoute,userRoutes)
@@ -40,6 +34,13 @@ app.use('/admin',protectedRoute,adminOnly,adminRoutes)
 app.use('/skill',skillRoutes)
 app.use('/test',testRoutes)
 app.use('/api',forgotPassRoutes)
+
+app.use(express.static(path.join(__dirname, 'build')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
 
 let PORT = process.env.PORT || 5000
 app.listen(PORT,()=>{
