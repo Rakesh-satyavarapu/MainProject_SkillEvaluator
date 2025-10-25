@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { axiosInstance } from "../lib/axios";
 import { useNavigate } from 'react-router-dom'; 
 import toast from 'react-hot-toast';
 
@@ -15,7 +16,7 @@ const ForgotPass = () => {
 
         try {
             // Fixing API call
-            let response = await axios.get(`/api/Finduser/${email}`);
+            let response = await axiosInstance.get(`/api/Finduser/${email}`);
             console.log(response)
             // Checking if the user exists
             if (response.data.userExist) {
