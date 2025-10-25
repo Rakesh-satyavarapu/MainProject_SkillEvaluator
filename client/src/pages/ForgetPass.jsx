@@ -22,7 +22,7 @@ const ForgotPass = () => {
             if (response.data.userExist) {
                 const otp = Math.floor(100000 + Math.random() * 900000);
                 const expiryTime = Date.now() + 15 * 60 * 1000; // OTP expires in 15 mins
-                await axiosInstance.post('/api/save-otp', { email, otp, expiryTime });
+                await axiosInstance.post('/api/saveOtp', { email, otp, expiryTime });
                 const data = {
                     service_id: 'service_6if8ffj',
                     template_id: 'template_qqg9udy',
