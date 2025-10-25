@@ -1,4 +1,4 @@
-let userSchema = require('../models/user.model');
+let userSchema = require('../models/user.model.js');
 let bcrypt = require('bcrypt');
 
 //check user existed or not for reset password
