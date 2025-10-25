@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import axios from 'axios';
+import { axiosInstance } from "../lib/axios";
 import { useNavigate } from 'react-router-dom'; 
 import toast from "react-hot-toast";
 
@@ -33,7 +34,7 @@ const OTPVerification = () => {
   };
 
   const verifyOTP = async(otp) =>{
-    let user = await axios.get(`/api/confirmOtp/${email}`)
+    let user = await axiosInstance.get(`/api/confirmOtp/${email}`)
     if(String(user.data.verifyOtp) === String(otp))
     {
       toast.success('OTP verified successfully')
