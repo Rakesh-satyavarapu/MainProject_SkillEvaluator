@@ -1,5 +1,5 @@
 let express = require('express');
-let { findUser, saveOtp, confirmOtp, setPassword } = require('../controllers/forgotPass.controller');
+let { findUser, saveOtp, confirmOtp, setPassword } = require('../controllers/forgotPass.controller.js');
 
 let router = express.Router();
 
