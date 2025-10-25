@@ -1,6 +1,7 @@
 import React from 'react'
 import { useState } from 'react'
 import axios from 'axios'
+import { axiosInstance } from "../lib/axios";
 import toast from 'react-hot-toast';
 import { useParams } from "react-router-dom";
 import { useNavigate } from 'react-router-dom'; 
@@ -13,7 +14,7 @@ const ResetPass = () => {
     const changePass = async(e) =>{
         e.preventDefault()
         try{
-          let res = await axios.post(`/api/setPass/${email}`,{pass})
+          let res = await axiosInstance.post(`/api/setPass/${email}`,{pass})
           if(res.data.set)
           {
             toast.success('password reset successfully ')
