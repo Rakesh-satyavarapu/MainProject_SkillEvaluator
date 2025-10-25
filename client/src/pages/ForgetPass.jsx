@@ -15,7 +15,7 @@ const ForgotPass = () => {
 
         try {
             // Fixing API call
-            let response = await axios.get(`/api/Finduser/${email}`);
+            let response = await axios.get(`/api/Finduser/${encodeURIComponent(email)}`);
             console.log(response)
             // Checking if the user exists
             if (response.data.userExist) {
