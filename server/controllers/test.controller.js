@@ -149,27 +149,24 @@ exports.randomTestQuestions = async (req, res) => {
 
     const skillObjectId = new mongoose.Types.ObjectId(skillId);
     const skill = await Skill.findById(skillObjectId);
-    if (!skill) {
-      return res.status(404).json({ message: "Skill not found" });
-    }
+    if (!skill) return res.status(404).json({ message: "Skill not found" });
 
     // Pick 50 random questions
     const questions = await Question.aggregate([
       { $match: { skill: skillObjectId, level } },
-      { $sample: { size: 50 } }
+      { $sample: { size: 25 } }
     ]);
+    if (!questions.length) return res.status(404).json({ message: "No questions found for this skill/level" });
 
-    if (!questions.length) {
-      return res.status(404).json({ message: "No questions found for this skill/level" });
-    }
-
-    // Save Attempt with question references
+    // Save attempt with TTL (1 hour expiration)
     const attempt = await Attempt.create({
       user: req.user._id,
       skill: skillObjectId,
       level,
       totalQuestions: questions.length,
-      questions: questions.map(q => ({ questionId: q._id }))
+      questions: questions.map(q => ({ questionId: q._id })),
+      submitted: false,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000) // expires in 1 hour
     });
 
     // Return questions without correct answers
@@ -180,7 +177,7 @@ exports.randomTestQuestions = async (req, res) => {
         _id: q._id,
         question: q.question,
         options: q.options,
-        answer: q.correctAnswer,
+        answer: null, // Do NOT send correct answer
         mainTopic: q.mainTopic,
         subTopic: q.subTopic,
         topic: q.topic,
@@ -199,7 +196,7 @@ exports.submitTest = async (req, res) => {
   try {
     const { attemptId, answers } = req.body;
 
-    if (!attemptId || typeof answers !== 'object') {
+    if (!attemptId || typeof answers !== "object") {
       return res.status(400).json({ message: "Missing or invalid attemptId and answers" });
     }
 
@@ -207,16 +204,10 @@ exports.submitTest = async (req, res) => {
       path: "questions.questionId",
       select: "correctAnswer topic subTopic"
     });
+    if (!attempt) return res.status(404).json({ message: "Attempt not found" });
+    if (attempt.submitted) return res.status(400).json({ message: "This test has already been submitted" });
 
-    if (!attempt) {
-      return res.status(404).json({ message: "We couldn’t find that test attempt" });
-    }
-
-    if (attempt.submitted) {
-      return res.status(400).json({ message: "This test has already been submitted" });
-    }
-
-    // ✅ Evaluate answers
+    // Evaluate answers
     attempt.questions.forEach(q => {
       const userAnswer = answers[q.questionId._id.toString()] ?? null;
       q.selectedAnswer = userAnswer;
@@ -229,7 +220,7 @@ exports.submitTest = async (req, res) => {
     attempt.totalQuestions = attempt.questions.length;
     attempt.score = Math.round((attempt.correctAnswers / attempt.totalQuestions) * 100);
 
-    // ✅ Identify weak topics
+    // Identify weak topics
     const weakTopicsSet = new Set();
     attempt.questions.forEach(q => {
       if (!q.isCorrect) {
@@ -239,22 +230,20 @@ exports.submitTest = async (req, res) => {
         else if (topic) weakTopicsSet.add(topic);
       }
     });
-
     attempt.weakTopics = Array.from(weakTopicsSet);
 
-    // ✅ Fetch skill name for YouTube search
+    // Fetch YouTube links
     const skillDoc = await Skill.findById(attempt.skill);
-    const skillName = skillDoc?.name || "Skill";
+    attempt.youtubeVideoLinks = await getYoutubeVideos(skillDoc?.name || "Skill", attempt.weakTopics, "en");
 
-    const language = 'en';
-    attempt.youtubeVideoLinks = await getYoutubeVideos(skillName, attempt.weakTopics, language);
-
+    // Mark submitted & remove TTL
     attempt.submitted = true;
+    attempt.expiresAt = undefined;
     await attempt.save();
 
+    // Update skill level if passed
     if (attempt.score >= 75) {
-      const user = await User.findById(attempt.user); // assuming attempt.user stores the user ID
-
+      const user = await User.findById(attempt.user);
       const regSkill = user.registeredSkills.find(s => s.skill.toString() === attempt.skill.toString());
       if (regSkill) {
         if (regSkill.level === "beginner") regSkill.level = "intermediate";
@@ -263,7 +252,6 @@ exports.submitTest = async (req, res) => {
         await user.save();
       }
     }
-
 
     res.status(200).json({
       message: "Your test has been submitted successfully",
@@ -275,12 +263,162 @@ exports.submitTest = async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({
-      message: "Something went wrong while submitting your test",
-      error: err.message
-    });
+    console.error("Submit test error:", err);
+    res.status(500).json({ message: "Something went wrong while submitting your test", error: err.message });
   }
 };
+
+// exports.randomTestQuestions = async (req, res) => {
+//   try {
+//     const { skillId, level } = req.body;
+
+//     if (!skillId || !level) {
+//       return res.status(400).json({ message: "skillId and level are required" });
+//     }
+
+//     // Check if user has registered this skill
+//     const user = await User.findById(req.user._id);
+//     const isRegistered = user.registeredSkills.some(
+//       (s) => s.skill.toString() === skillId && s.status === "registered"
+//     );
+//     if (!isRegistered) {
+//       return res.status(403).json({ message: "You must register this skill before attempting the test." });
+//     }
+
+//     const skillObjectId = new mongoose.Types.ObjectId(skillId);
+//     const skill = await Skill.findById(skillObjectId);
+//     if (!skill) {
+//       return res.status(404).json({ message: "Skill not found" });
+//     }
+
+//     // Pick 50 random questions
+//     const questions = await Question.aggregate([
+//       { $match: { skill: skillObjectId, level } },
+//       { $sample: { size: 50 } }
+//     ]);
+
+//     if (!questions.length) {
+//       return res.status(404).json({ message: "No questions found for this skill/level" });
+//     }
+
+//     // Save Attempt with question references
+//     const attempt = await Attempt.create({
+//       user: req.user._id,
+//       skill: skillObjectId,
+//       level,
+//       totalQuestions: questions.length,
+//       questions: questions.map(q => ({ questionId: q._id }))
+//     });
+
+//     // Return questions without correct answers
+//     res.status(200).json({
+//       message: "Random test questions retrieved successfully",
+//       attemptId: attempt._id,
+//       data: questions.map(q => ({
+//         _id: q._id,
+//         question: q.question,
+//         options: q.options,
+//         answer: q.correctAnswer,
+//         mainTopic: q.mainTopic,
+//         subTopic: q.subTopic,
+//         topic: q.topic,
+//         level: q.level,
+//       }))
+//     });
+//   } catch (err) {
+//     console.error("Random test error:", err);
+//     res.status(500).json({ message: "Server error", error: err.message });
+//   }
+// };
+
+// const { getYoutubeVideos } = require('../youtubeServices.js')
+
+// exports.submitTest = async (req, res) => {
+//   try {
+//     const { attemptId, answers } = req.body;
+
+//     if (!attemptId || typeof answers !== 'object') {
+//       return res.status(400).json({ message: "Missing or invalid attemptId and answers" });
+//     }
+
+//     const attempt = await Attempt.findById(attemptId).populate({
+//       path: "questions.questionId",
+//       select: "correctAnswer topic subTopic"
+//     });
+
+//     if (!attempt) {
+//       return res.status(404).json({ message: "We couldn’t find that test attempt" });
+//     }
+
+//     if (attempt.submitted) {
+//       return res.status(400).json({ message: "This test has already been submitted" });
+//     }
+
+//     // ✅ Evaluate answers
+//     attempt.questions.forEach(q => {
+//       const userAnswer = answers[q.questionId._id.toString()] ?? null;
+//       q.selectedAnswer = userAnswer;
+//       q.isCorrect = userAnswer &&
+//         q.questionId.correctAnswer &&
+//         userAnswer.trim().toLowerCase() === q.questionId.correctAnswer.trim().toLowerCase();
+//     });
+
+//     attempt.correctAnswers = attempt.questions.filter(q => q.isCorrect).length;
+//     attempt.totalQuestions = attempt.questions.length;
+//     attempt.score = Math.round((attempt.correctAnswers / attempt.totalQuestions) * 100);
+
+//     // ✅ Identify weak topics
+//     const weakTopicsSet = new Set();
+//     attempt.questions.forEach(q => {
+//       if (!q.isCorrect) {
+//         const subTopic = q.questionId.subTopic?.trim();
+//         const topic = q.questionId.topic?.trim();
+//         if (subTopic) weakTopicsSet.add(subTopic);
+//         else if (topic) weakTopicsSet.add(topic);
+//       }
+//     });
+
+//     attempt.weakTopics = Array.from(weakTopicsSet);
+
+//     // ✅ Fetch skill name for YouTube search
+//     const skillDoc = await Skill.findById(attempt.skill);
+//     const skillName = skillDoc?.name || "Skill";
+
+//     const language = 'en';
+//     attempt.youtubeVideoLinks = await getYoutubeVideos(skillName, attempt.weakTopics, language);
+
+//     attempt.submitted = true;
+//     await attempt.save();
+
+//     if (attempt.score >= 75) {
+//       const user = await User.findById(attempt.user); // assuming attempt.user stores the user ID
+
+//       const regSkill = user.registeredSkills.find(s => s.skill.toString() === attempt.skill.toString());
+//       if (regSkill) {
+//         if (regSkill.level === "beginner") regSkill.level = "intermediate";
+//         else if (regSkill.level === "intermediate") regSkill.level = "advanced";
+//         regSkill.lastUpdated = new Date();
+//         await user.save();
+//       }
+//     }
+
+
+//     res.status(200).json({
+//       message: "Your test has been submitted successfully",
+//       score: attempt.score,
+//       correctAnswers: attempt.correctAnswers,
+//       totalQuestions: attempt.totalQuestions,
+//       weakTopics: attempt.weakTopics,
+//       youtubeVideoLinks: attempt.youtubeVideoLinks
+//     });
+
+//   } catch (err) {
+//     res.status(500).json({
+//       message: "Something went wrong while submitting your test",
+//       error: err.message
+//     });
+//   }
+// };
 
 exports.getTestHistoryBySkill = async (req, res) => {
   try {
