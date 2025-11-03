@@ -21,7 +21,7 @@ const Register = () => {
   const submitHandler = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      signUp({ name: username, email, password });
+      signUp({ name: username, email: email.toLowerCase(), password });
     }
     setUsername('');
     setEmail('');
