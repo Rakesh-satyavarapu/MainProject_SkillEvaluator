@@ -21,7 +21,7 @@ const Login = () => {
   const submitHandler = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      login({ email, password });
+      login({ email: email.toLowerCase(), password });
     }
     setEmail("");
     setPassword("");
