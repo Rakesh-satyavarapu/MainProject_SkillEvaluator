@@ -405,10 +405,6 @@ exports.submitTest = async (req, res) => {
       }
     }
 
-    // Check and award badges
-    const newBadges = await checkAndAwardBadges(user, attempt);
-    await user.save();
-
     res.status(200).json({
       message: "Your test has been submitted successfully",
       score: attempt.score,
@@ -424,6 +420,71 @@ exports.submitTest = async (req, res) => {
     res.status(500).json({ message: "Something went wrong while submitting your test", error: err.message });
   }
 };
+
+// exports.randomTestQuestions = async (req, res) => {
+//   try {
+//     const { skillId, level } = req.body;
+
+//     if (!skillId || !level) {
+//       return res.status(400).json({ message: "skillId and level are required" });
+//     }
+
+//     // Check if user has registered this skill
+//     const user = await User.findById(req.user._id);
+//     const isRegistered = user.registeredSkills.some(
+//       (s) => s.skill.toString() === skillId && s.status === "registered"
+//     );
+//     if (!isRegistered) {
+//       return res.status(403).json({ message: "You must register this skill before attempting the test." });
+//     }
+
+//     const skillObjectId = new mongoose.Types.ObjectId(skillId);
+//     const skill = await Skill.findById(skillObjectId);
+//     if (!skill) {
+//       return res.status(404).json({ message: "Skill not found" });
+//     }
+
+//     // Pick 50 random questions
+//     const questions = await Question.aggregate([
+//       { $match: { skill: skillObjectId, level } },
+//       { $sample: { size: 50 } }
+//     ]);
+
+//     if (!questions.length) {
+//       return res.status(404).json({ message: "No questions found for this skill/level" });
+//     }
+
+//     // Save Attempt with question references
+//     const attempt = await Attempt.create({
+//       user: req.user._id,
+//       skill: skillObjectId,
+//       level,
+//       totalQuestions: questions.length,
+//       questions: questions.map(q => ({ questionId: q._id }))
+//     });
+
+//     // Return questions without correct answers
+//     res.status(200).json({
+//       message: "Random test questions retrieved successfully",
+//       attemptId: attempt._id,
+//       data: questions.map(q => ({
+//         _id: q._id,
+//         question: q.question,
+//         options: q.options,
+//         answer: q.correctAnswer,
+//         mainTopic: q.mainTopic,
+//         subTopic: q.subTopic,
+//         topic: q.topic,
+//         level: q.level,
+//       }))
+//     });
+//   } catch (err) {
+//     console.error("Random test error:", err);
+//     res.status(500).json({ message: "Server error", error: err.message });
+//   }
+// };
+
+// const { getYoutubeVideos } = require('../youtubeServices.js')
 
 // exports.submitTest = async (req, res) => {
 //   try {
@@ -511,7 +572,6 @@ exports.submitTest = async (req, res) => {
 //     });
 //   }
 // };
-
 
 exports.getTestHistoryBySkill = async (req, res) => {
   try {
