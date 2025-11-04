@@ -139,6 +139,40 @@ exports.getUserDetails = async (req, res) => {
   }
 };
 
+exports.updateName = async (req, res) => {
+  try {
+    const { name } = req.body;
+    const userId = req.user.id;
+
+    if (!name || name.trim().length < 3) {
+      return res.status(400).json({ message: "Name must be at least 3 characters long" });
+    }
+
+    const user = await userSchema.findByIdAndUpdate(
+      userId,
+      { name: name.trim() },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ 
+      message: "Name updated successfully",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+};
+
 exports.deleteUser = async (req, res) => {
   try {
     const { userId } = req.params;

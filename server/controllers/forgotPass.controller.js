@@ -1,4 +1,4 @@
-let userSchema = require('../models/user.model');
+let userSchema = require('../models/user.model.js');
 let bcrypt = require('bcrypt');
 
 //check user existed or not for reset password
@@ -56,14 +56,25 @@ exports.confirmOtp = async (req, res) => {
 }
 
 //set new password
-exports.setPassword = async(req,res)=>{
-    let email = req.params.email
-    let {pass} = req.body
-    bcrypt.genSalt(10,(err,salt)=>{
-        bcrypt.hash(pass,salt,async(err,hash)=>{    
-            let user = await userSchema.findOneAndUpdate({email},{password:hash},{new:true})
-            console.log(`password reset successfully for ${user.name}`)
-            res.json({'set':true})
-        })
-})
-}
+exports.setPassword = async (req, res) => {
+    try {
+        const email = req.params.email;
+        const { pass } = req.body;
+        // Generate hash
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(pass, salt);
+        const user = await userSchema.findOneAndUpdate(
+            { email },
+            { password: hash },
+            { new: true }
+        );
+        if (!user) {
+            return res.status(404).json({ set: false, message: "User not found" });
+        }
+        console.log(`Password reset successfully for ${user.name}`);
+        return res.json({ set: true });
+    } catch (error) {
+        console.error("Error resetting password:", error);
+        return res.status(500).json({ set: false, message: "Internal Server Error" });
+    }
+};

@@ -130,6 +130,69 @@ exports.generateSkillQuestions = async (req, res) => {
   }
 };
 
+// exports.randomTestQuestions = async (req, res) => {
+//   try {
+//     const { skillId, level } = req.body;
+
+//     if (!skillId || !level) {
+//       return res.status(400).json({ message: "skillId and level are required" });
+//     }
+
+//     // Check if user has registered this skill
+//     const user = await User.findById(req.user._id);
+//     const isRegistered = user.registeredSkills.some(
+//       (s) => s.skill.toString() === skillId && s.status === "registered"
+//     );
+//     if (!isRegistered) {
+//       return res.status(403).json({ message: "You must register this skill before attempting the test." });
+//     }
+
+//     const skillObjectId = new mongoose.Types.ObjectId(skillId);
+//     const skill = await Skill.findById(skillObjectId);
+//     if (!skill) {
+//       return res.status(404).json({ message: "Skill not found" });
+//     }
+
+//     // Pick 50 random questions
+//     const questions = await Question.aggregate([
+//       { $match: { skill: skillObjectId, level } },
+//       { $sample: { size: 50 } }
+//     ]);
+
+//     if (!questions.length) {
+//       return res.status(404).json({ message: "No questions found for this skill/level" });
+//     }
+
+//     // Save Attempt with question references
+//     const attempt = await Attempt.create({
+//       user: req.user._id,
+//       skill: skillObjectId,
+//       level,
+//       totalQuestions: questions.length,
+//       questions: questions.map(q => ({ questionId: q._id }))
+//     });
+
+//     // Return questions without correct answers
+//     res.status(200).json({
+//       message: "Random test questions retrieved successfully",
+//       attemptId: attempt._id,
+//       data: questions.map(q => ({
+//         _id: q._id,
+//         question: q.question,
+//         options: q.options,
+//         answer: q.correctAnswer,
+//         mainTopic: q.mainTopic,
+//         subTopic: q.subTopic,
+//         topic: q.topic,
+//         level: q.level,
+//       }))
+//     });
+//   } catch (err) {
+//     console.error("Random test error:", err);
+//     res.status(500).json({ message: "Server error", error: err.message });
+//   }
+// };
+
 exports.randomTestQuestions = async (req, res) => {
   try {
     const { skillId, level } = req.body;
@@ -149,27 +212,24 @@ exports.randomTestQuestions = async (req, res) => {
 
     const skillObjectId = new mongoose.Types.ObjectId(skillId);
     const skill = await Skill.findById(skillObjectId);
-    if (!skill) {
-      return res.status(404).json({ message: "Skill not found" });
-    }
+    if (!skill) return res.status(404).json({ message: "Skill not found" });
 
     // Pick 50 random questions
     const questions = await Question.aggregate([
       { $match: { skill: skillObjectId, level } },
       { $sample: { size: 50 } }
     ]);
+    if (!questions.length) return res.status(404).json({ message: "No questions found for this skill/level" });
 
-    if (!questions.length) {
-      return res.status(404).json({ message: "No questions found for this skill/level" });
-    }
-
-    // Save Attempt with question references
+    // Save attempt with TTL (1 hour expiration)
     const attempt = await Attempt.create({
       user: req.user._id,
       skill: skillObjectId,
       level,
       totalQuestions: questions.length,
-      questions: questions.map(q => ({ questionId: q._id }))
+      questions: questions.map(q => ({ questionId: q._id })),
+      submitted: false,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000) // expires in 1 hour
     });
 
     // Return questions without correct answers
@@ -180,7 +240,7 @@ exports.randomTestQuestions = async (req, res) => {
         _id: q._id,
         question: q.question,
         options: q.options,
-        answer: q.correctAnswer,
+        answer: null, // Do NOT send correct answer
         mainTopic: q.mainTopic,
         subTopic: q.subTopic,
         topic: q.topic,
@@ -195,11 +255,100 @@ exports.randomTestQuestions = async (req, res) => {
 
 const { getYoutubeVideos } = require('../youtubeServices.js')
 
+// Helper function to check and award badges
+const checkAndAwardBadges = async (user, attempt) => {
+  const newBadges = [];
+  
+  if (!user.badges) user.badges = [];
+  if (!user.badgeHistory) user.badgeHistory = [];
+
+  // 1. First Test Badge
+  const totalTests = await Attempt.countDocuments({ user: user._id, submitted: true });
+  if ((totalTests === 1 || totalTests > 1) && !user.badges.includes('first-test')) {
+    user.badges.push('first-test');
+    user.badgeHistory.push({ badge: 'first-test', earnedAt: new Date() });
+    newBadges.push('first-test');
+  }
+
+  // 2. Perfect Score Badge
+  if (attempt.score === 100 && !user.badges.includes('perfect-score')) {
+    user.badges.push('perfect-score');
+    user.badgeHistory.push({ badge: 'perfect-score', earnedAt: new Date() });
+    newBadges.push('perfect-score');
+  }
+
+  // 3. Skill Master Badge (10 tests in a skill)
+  const skillTestCount = await Attempt.countDocuments({ 
+    user: user._id, 
+    skill: attempt.skill, 
+    submitted: true 
+  });
+  if (skillTestCount >= 10 && !user.badges.includes('skill-master')) {
+    user.badges.push('skill-master');
+    user.badgeHistory.push({ badge: 'skill-master', earnedAt: new Date() });
+    newBadges.push('skill-master');
+  }
+
+  // 4. Multi-Skill Badge (3+ registered skills)
+  const registeredSkillsCount = user.registeredSkills.filter(s => s.status === 'registered').length;
+  if (registeredSkillsCount >= 3 && !user.badges.includes('multi-skill')) {
+    user.badges.push('multi-skill');
+    user.badgeHistory.push({ badge: 'multi-skill', earnedAt: new Date() });
+    newBadges.push('multi-skill');
+  }
+
+  // 5. Consistency Badge (5 tests in a week)
+  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const recentTests = await Attempt.countDocuments({ 
+    user: user._id, 
+    submitted: true,
+    takenAt: { $gte: oneWeekAgo }
+  });
+  if (recentTests >= 5 && !user.badges.includes('consistency')) {
+    user.badges.push('consistency');
+    user.badgeHistory.push({ badge: 'consistency', earnedAt: new Date() });
+    newBadges.push('consistency');
+  }
+
+  // 6. Improvement Badge (20% improvement between tests)
+  const previousAttempt = await Attempt.findOne({ 
+    user: user._id, 
+    skill: attempt.skill, 
+    submitted: true,
+    _id: { $ne: attempt._id }
+  }).sort({ takenAt: -1 });
+  
+  if (previousAttempt && previousAttempt.score < attempt.score) {
+    const improvement = attempt.score - previousAttempt.score;
+    if (improvement >= 20 && !user.badges.includes('improvement')) {
+      user.badges.push('improvement');
+      user.badgeHistory.push({ badge: 'improvement', earnedAt: new Date() });
+      newBadges.push('improvement');
+    }
+  }
+
+  // 7. Expert Badge (90%+ on advanced level test)
+  if (attempt.level === 'advanced' && attempt.score >= 90 && !user.badges.includes('expert')) {
+    user.badges.push('expert');
+    user.badgeHistory.push({ badge: 'expert', earnedAt: new Date() });
+    newBadges.push('expert');
+  }
+
+  // 8. Dedicated Badge (25 total tests)
+  if (totalTests >= 25 && !user.badges.includes('dedicated')) {
+    user.badges.push('dedicated');
+    user.badgeHistory.push({ badge: 'dedicated', earnedAt: new Date() });
+    newBadges.push('dedicated');
+  }
+
+  return newBadges;
+};
+
 exports.submitTest = async (req, res) => {
   try {
     const { attemptId, answers } = req.body;
 
-    if (!attemptId || typeof answers !== 'object') {
+    if (!attemptId || typeof answers !== "object") {
       return res.status(400).json({ message: "Missing or invalid attemptId and answers" });
     }
 
@@ -207,16 +356,10 @@ exports.submitTest = async (req, res) => {
       path: "questions.questionId",
       select: "correctAnswer topic subTopic"
     });
+    if (!attempt) return res.status(404).json({ message: "Attempt not found" });
+    if (attempt.submitted) return res.status(400).json({ message: "This test has already been submitted" });
 
-    if (!attempt) {
-      return res.status(404).json({ message: "We couldn’t find that test attempt" });
-    }
-
-    if (attempt.submitted) {
-      return res.status(400).json({ message: "This test has already been submitted" });
-    }
-
-    // ✅ Evaluate answers
+    // Evaluate answers
     attempt.questions.forEach(q => {
       const userAnswer = answers[q.questionId._id.toString()] ?? null;
       q.selectedAnswer = userAnswer;
@@ -229,7 +372,7 @@ exports.submitTest = async (req, res) => {
     attempt.totalQuestions = attempt.questions.length;
     attempt.score = Math.round((attempt.correctAnswers / attempt.totalQuestions) * 100);
 
-    // ✅ Identify weak topics
+    // Identify weak topics
     const weakTopicsSet = new Set();
     attempt.questions.forEach(q => {
       if (!q.isCorrect) {
@@ -239,22 +382,20 @@ exports.submitTest = async (req, res) => {
         else if (topic) weakTopicsSet.add(topic);
       }
     });
-
     attempt.weakTopics = Array.from(weakTopicsSet);
 
-    // ✅ Fetch skill name for YouTube search
+    // Fetch YouTube links
     const skillDoc = await Skill.findById(attempt.skill);
-    const skillName = skillDoc?.name || "Skill";
+    attempt.youtubeVideoLinks = await getYoutubeVideos(skillDoc?.name || "Skill", attempt.weakTopics, "en");
 
-    const language = 'en';
-    attempt.youtubeVideoLinks = await getYoutubeVideos(skillName, attempt.weakTopics, language);
-
+    // Mark submitted & remove TTL
     attempt.submitted = true;
+    attempt.expiresAt = undefined;
     await attempt.save();
 
+    // Update skill level if passed
     if (attempt.score >= 75) {
-      const user = await User.findById(attempt.user); // assuming attempt.user stores the user ID
-
+      const user = await User.findById(attempt.user);
       const regSkill = user.registeredSkills.find(s => s.skill.toString() === attempt.skill.toString());
       if (regSkill) {
         if (regSkill.level === "beginner") regSkill.level = "intermediate";
@@ -264,6 +405,9 @@ exports.submitTest = async (req, res) => {
       }
     }
 
+    // Check and award badges
+    const newBadges = await checkAndAwardBadges(user, attempt);
+    await user.save();
 
     res.status(200).json({
       message: "Your test has been submitted successfully",
@@ -271,16 +415,103 @@ exports.submitTest = async (req, res) => {
       correctAnswers: attempt.correctAnswers,
       totalQuestions: attempt.totalQuestions,
       weakTopics: attempt.weakTopics,
-      youtubeVideoLinks: attempt.youtubeVideoLinks
+      youtubeVideoLinks: attempt.youtubeVideoLinks,
+      newBadges: newBadges || []
     });
 
   } catch (err) {
-    res.status(500).json({
-      message: "Something went wrong while submitting your test",
-      error: err.message
-    });
+    console.error("Submit test error:", err);
+    res.status(500).json({ message: "Something went wrong while submitting your test", error: err.message });
   }
 };
+
+// exports.submitTest = async (req, res) => {
+//   try {
+//     const { attemptId, answers } = req.body;
+
+//     if (!attemptId || typeof answers !== 'object') {
+//       return res.status(400).json({ message: "Missing or invalid attemptId and answers" });
+//     }
+
+//     const attempt = await Attempt.findById(attemptId).populate({
+//       path: "questions.questionId",
+//       select: "correctAnswer topic subTopic"
+//     });
+
+//     if (!attempt) {
+//       return res.status(404).json({ message: "We couldn’t find that test attempt" });
+//     }
+
+//     if (attempt.submitted) {
+//       return res.status(400).json({ message: "This test has already been submitted" });
+//     }
+
+//     // ✅ Evaluate answers
+//     attempt.questions.forEach(q => {
+//       const userAnswer = answers[q.questionId._id.toString()] ?? null;
+//       q.selectedAnswer = userAnswer;
+//       q.isCorrect = userAnswer &&
+//         q.questionId.correctAnswer &&
+//         userAnswer.trim().toLowerCase() === q.questionId.correctAnswer.trim().toLowerCase();
+//     });
+
+//     attempt.correctAnswers = attempt.questions.filter(q => q.isCorrect).length;
+//     attempt.totalQuestions = attempt.questions.length;
+//     attempt.score = Math.round((attempt.correctAnswers / attempt.totalQuestions) * 100);
+
+//     // ✅ Identify weak topics
+//     const weakTopicsSet = new Set();
+//     attempt.questions.forEach(q => {
+//       if (!q.isCorrect) {
+//         const subTopic = q.questionId.subTopic?.trim();
+//         const topic = q.questionId.topic?.trim();
+//         if (subTopic) weakTopicsSet.add(subTopic);
+//         else if (topic) weakTopicsSet.add(topic);
+//       }
+//     });
+
+//     attempt.weakTopics = Array.from(weakTopicsSet);
+
+//     // ✅ Fetch skill name for YouTube search
+//     const skillDoc = await Skill.findById(attempt.skill);
+//     const skillName = skillDoc?.name || "Skill";
+
+//     const language = 'en';
+//     attempt.youtubeVideoLinks = await getYoutubeVideos(skillName, attempt.weakTopics, language);
+
+//     attempt.submitted = true;
+//     await attempt.save();
+
+//     if (attempt.score >= 75) {
+//       const user = await User.findById(attempt.user); // assuming attempt.user stores the user ID
+
+//       const regSkill = user.registeredSkills.find(s => s.skill.toString() === attempt.skill.toString());
+//       if (regSkill) {
+//         if (regSkill.level === "beginner") regSkill.level = "intermediate";
+//         else if (regSkill.level === "intermediate") regSkill.level = "advanced";
+//         regSkill.lastUpdated = new Date();
+//         await user.save();
+//       }
+//     }
+
+
+//     res.status(200).json({
+//       message: "Your test has been submitted successfully",
+//       score: attempt.score,
+//       correctAnswers: attempt.correctAnswers,
+//       totalQuestions: attempt.totalQuestions,
+//       weakTopics: attempt.weakTopics,
+//       youtubeVideoLinks: attempt.youtubeVideoLinks
+//     });
+
+//   } catch (err) {
+//     res.status(500).json({
+//       message: "Something went wrong while submitting your test",
+//       error: err.message
+//     });
+//   }
+// };
+
 
 exports.getTestHistoryBySkill = async (req, res) => {
   try {

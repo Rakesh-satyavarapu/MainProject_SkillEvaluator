@@ -22,15 +22,15 @@ app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
 
-app.use(cors({
-    origin: 'https://skillsevaluator.onrender.com',
-    credentials: true
-}))
-
 // app.use(cors({
-//     origin: 'http://localhost:3000',
+//     origin: 'https://skillsevaluator.onrender.com',
 //     credentials: true
 // }))
+
+app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true
+}))
 
 app.use('/auth',authRoutes)
 app.use('/user',protectedRoute,userRoutes)
@@ -39,12 +39,12 @@ app.use('/skill',skillRoutes)
 app.use('/test',testRoutes)
 app.use('/api',forgotPassRoutes)
 
-app.use((req, res, next) => {
-  if (req.path.startsWith('/auth') || req.path.startsWith('/user') || req.path.startsWith('/skill') || req.path.startsWith('/test') || req.path.startsWith('/api')) {
-    return next();
-  }
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
+// app.use((req, res, next) => {
+//   if (req.path.startsWith('/auth') || req.path.startsWith('/user') || req.path.startsWith('/skill') || req.path.startsWith('/test') || req.path.startsWith('/api')) {
+//     return next();
+//   }
+//   res.sendFile(path.join(__dirname, 'build', 'index.html'));
+// });
 
 
 let PORT = process.env.PORT || 5000

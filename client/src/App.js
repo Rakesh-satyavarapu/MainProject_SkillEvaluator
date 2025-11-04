@@ -36,6 +36,7 @@ function App() {
   return (
     <>
     <Nav />
+    
     <Routes>
       <Route path='/' element={authUser? <Home /> : <Navigate to='/login' />} />
       <Route path='/login' element={!authUser ? <Login /> : <Navigate to='/' />} />

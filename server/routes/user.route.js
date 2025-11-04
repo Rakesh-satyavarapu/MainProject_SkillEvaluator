@@ -1,6 +1,6 @@
 let express = require('express')
 
-let{registeredSkill,withdrawSkill,getUserDetails} = require('../controllers/user.controller')
+let{registeredSkill,withdrawSkill,getUserDetails,updateName} = require('../controllers/user.controller')
 let {randomTestQuestions,submitTest,getTestHistoryBySkill,getAttemptById} = require('../controllers/test.controller');
 let {chatWithGemini,chatHistory} = require('../controllers/chat.controller')
 
@@ -15,5 +15,6 @@ router.get('/chatHistory', chatHistory);
 router.get('/skill/:skillId/testHistory', getTestHistoryBySkill);
 router.get('/attempt/:attemptId', getAttemptById);
 router.get("/uid/:userId", getUserDetails);
+router.put("/updateName", updateName);
 
 module.exports = router
