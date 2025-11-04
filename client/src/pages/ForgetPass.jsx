@@ -20,7 +20,6 @@ const ForgotPass = () => {
         try {
             // Fixing API call
             let response = await axiosInstance.get(`/api/Finduser/${email}`);
-            let response = await axiosInstance.get(`/api/Finduser/${email}`);
             console.log(response)
             // Checking if the user exists
             if (response.data.userExist) {
