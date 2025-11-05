@@ -285,53 +285,64 @@ exports.submitTest = async (req, res) => {
   try {
     const { attemptId, answers } = req.body;
 
-    if (!attemptId || typeof answers !== "object") {
-      return res.status(400).json({ message: "Missing or invalid attemptId and answers" });
+    if (!attemptId || !answers || typeof answers !== "object") {
+      return res.status(400).json({ message: "Missing or invalid attemptId or answers" });
     }
 
     const attempt = await Attempt.findById(attemptId).populate({
       path: "questions.questionId",
       select: "correctAnswer topic subTopic"
     });
-    if (!attempt) return res.status(404).json({ message: "Attempt not found" });
-    if (attempt.submitted) return res.status(400).json({ message: "This test has already been submitted" });
 
-    // Evaluate answers
-    attempt.questions.forEach(q => {
-      const userAnswer = answers[q.questionId._id.toString()] ?? null;
-      q.selectedAnswer = userAnswer;
-      q.isCorrect = userAnswer &&
-        q.questionId.correctAnswer &&
-        userAnswer.trim().toLowerCase() === q.questionId.correctAnswer.trim().toLowerCase();
-    });
+    if (!attempt) return res.status(404).json({ message: "Attempt not found or expired." });
+    if (attempt.submitted) return res.status(400).json({ message: "This test has already been submitted." });
 
-    attempt.correctAnswers = attempt.questions.filter(q => q.isCorrect).length;
-    attempt.totalQuestions = attempt.questions.length;
-    attempt.score = Math.round((attempt.correctAnswers / attempt.totalQuestions) * 100);
-
-    // Identify weak topics
+    // ✅ Evaluate answers
+    let correctCount = 0;
     const weakTopicsSet = new Set();
-    attempt.questions.forEach(q => {
-      if (!q.isCorrect) {
-        const subTopic = q.questionId.subTopic?.trim();
-        const topic = q.questionId.topic?.trim();
-        if (subTopic) weakTopicsSet.add(subTopic);
-        else if (topic) weakTopicsSet.add(topic);
+
+    for (const q of attempt.questions) {
+      const userAnswer = answers[q.questionId._id.toString()] ?? null;
+      const correctAnswer = q.questionId.correctAnswer?.trim().toLowerCase();
+
+      q.selectedAnswer = userAnswer;
+      q.isCorrect = !!userAnswer && userAnswer.trim().toLowerCase() === correctAnswer;
+
+      if (q.isCorrect) correctCount++;
+      else {
+        const topic = q.questionId.subTopic?.trim() || q.questionId.topic?.trim();
+        if (topic) weakTopicsSet.add(topic);
       }
-    });
+    }
+
+    attempt.correctAnswers = correctCount;
+    attempt.totalQuestions = attempt.questions.length;
+    attempt.score = Math.round((correctCount / attempt.totalQuestions) * 100);
     attempt.weakTopics = Array.from(weakTopicsSet);
 
-    // Fetch YouTube links
-    const skillDoc = await Skill.findById(attempt.skill);
-    attempt.youtubeVideoLinks = await getYoutubeVideos(skillDoc?.name || "Skill", attempt.weakTopics, "en");
+    // 🎥 Fetch YouTube video links only if weak topics exist
+    let youtubeLinks = [];
+    if (attempt.weakTopics.length > 0) {
+      const skillDoc = await Skill.findById(attempt.skill).select("name");
+      youtubeLinks = await getYoutubeVideos(skillDoc?.name || "Skill", attempt.weakTopics, "en");
+    }
+    attempt.youtubeVideoLinks = youtubeLinks;
 
-    // Mark submitted & remove TTL
+    // ✅ Finalize attempt
     attempt.submitted = true;
-    attempt.expiresAt = null;
-    attempt.takenAt = new Date(); // <-- ensure takenAt exists for consistency badge
+    attempt.expiresAt = null; // stop TTL deletion
+    attempt.takenAt = new Date();
+
     await attempt.save();
 
-    // Update user skill level & assign badges
+    // 🧩 Ensure Mongo write completes before badges
+    const freshAttempt = await Attempt.findById(attempt._id);
+    if (!freshAttempt) {
+      console.error("⚠️ Attempt disappeared after save — possible replication delay.");
+      return res.status(500).json({ message: "Attempt data not yet available. Please try again." });
+    }
+
+    // 🧾 Fetch user and update skill level if eligible
     const user = await User.findById(attempt.user);
     const regSkill = user.registeredSkills.find(s => s.skill.toString() === attempt.skill.toString());
 
@@ -341,13 +352,13 @@ exports.submitTest = async (req, res) => {
       regSkill.lastUpdated = new Date();
     }
 
-    // ✅ Call the badge system
-    const newBadges = await checkAndAwardBadges(user, attempt);
-
+    // 🏅 Call the badge system
+    const newBadges = await checkAndAwardBadges(user, freshAttempt);
     await user.save();
 
     res.status(200).json({
-      message: "Your test has been submitted successfully",
+      message: "✅ Test submitted successfully",
+      attemptId: attempt._id,
       score: attempt.score,
       correctAnswers: attempt.correctAnswers,
       totalQuestions: attempt.totalQuestions,
@@ -357,8 +368,11 @@ exports.submitTest = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Submit test error:", err);
-    res.status(500).json({ message: "Something went wrong while submitting your test", error: err.message });
+    console.error("❌ Submit test error:", err);
+    res.status(500).json({
+      message: "Something went wrong while submitting your test",
+      error: err.message
+    });
   }
 };
 
