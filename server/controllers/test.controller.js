@@ -156,7 +156,7 @@ exports.randomTestQuestions = async (req, res) => {
     // Pick 50 random questions
     const questions = await Question.aggregate([
       { $match: { skill: skillObjectId, level } },
-      { $sample: { size: 5 } }
+      { $sample: { size: 50 } }
     ]);
     if (!questions.length) return res.status(404).json({ message: "No questions found for this skill/level" });
 
