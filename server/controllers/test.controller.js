@@ -217,7 +217,7 @@ exports.randomTestQuestions = async (req, res) => {
     // Pick 50 random questions
     const questions = await Question.aggregate([
       { $match: { skill: skillObjectId, level } },
-      { $sample: { size: 50 } }
+      { $sample: { size: 5 } }
     ]);
     if (!questions.length) return res.status(404).json({ message: "No questions found for this skill/level" });
 
@@ -253,9 +253,9 @@ exports.randomTestQuestions = async (req, res) => {
   }
 };
 
-const { getYoutubeVideos } = require('../youtubeServices.js')
+const { getYoutubeVideos } = require('../youtubeServices.js');
 
-// Helper function to check and award badges
+// Helper function to check and award badges (unchanged)
 const checkAndAwardBadges = async (user, attempt) => {
   const newBadges = [];
   
@@ -310,7 +310,7 @@ const checkAndAwardBadges = async (user, attempt) => {
     newBadges.push('consistency');
   }
 
-  // 6. Improvement Badge (20% improvement between tests)
+  // 6. Improvement Badge (20% improvement)
   const previousAttempt = await Attempt.findOne({ 
     user: user._id, 
     skill: attempt.skill, 
@@ -327,7 +327,7 @@ const checkAndAwardBadges = async (user, attempt) => {
     }
   }
 
-  // 7. Expert Badge (90%+ on advanced level test)
+  // 7. Expert Badge (90%+ advanced test)
   if (attempt.level === 'advanced' && attempt.score >= 90 && !user.badges.includes('expert')) {
     user.badges.push('expert');
     user.badgeHistory.push({ badge: 'expert', earnedAt: new Date() });
@@ -391,19 +391,23 @@ exports.submitTest = async (req, res) => {
     // Mark submitted & remove TTL
     attempt.submitted = true;
     attempt.expiresAt = undefined;
+    attempt.takenAt = new Date(); // <-- ensure takenAt exists for consistency badge
     await attempt.save();
 
-    // Update skill level if passed
-    if (attempt.score >= 75) {
-      const user = await User.findById(attempt.user);
-      const regSkill = user.registeredSkills.find(s => s.skill.toString() === attempt.skill.toString());
-      if (regSkill) {
-        if (regSkill.level === "beginner") regSkill.level = "intermediate";
-        else if (regSkill.level === "intermediate") regSkill.level = "advanced";
-        regSkill.lastUpdated = new Date();
-        await user.save();
-      }
+    // Update user skill level & assign badges
+    const user = await User.findById(attempt.user);
+    const regSkill = user.registeredSkills.find(s => s.skill.toString() === attempt.skill.toString());
+
+    if (regSkill && attempt.score >= 75) {
+      if (regSkill.level === "beginner") regSkill.level = "intermediate";
+      else if (regSkill.level === "intermediate") regSkill.level = "advanced";
+      regSkill.lastUpdated = new Date();
     }
+
+    // ✅ Call the badge system
+    const newBadges = await checkAndAwardBadges(user, attempt);
+
+    await user.save();
 
     res.status(200).json({
       message: "Your test has been submitted successfully",
@@ -412,7 +416,7 @@ exports.submitTest = async (req, res) => {
       totalQuestions: attempt.totalQuestions,
       weakTopics: attempt.weakTopics,
       youtubeVideoLinks: attempt.youtubeVideoLinks,
-      newBadges: newBadges || []
+      newBadges
     });
 
   } catch (err) {
@@ -420,6 +424,7 @@ exports.submitTest = async (req, res) => {
     res.status(500).json({ message: "Something went wrong while submitting your test", error: err.message });
   }
 };
+
 
 // exports.randomTestQuestions = async (req, res) => {
 //   try {

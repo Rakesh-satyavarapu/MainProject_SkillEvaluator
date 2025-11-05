@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { axiosInstance } from "../lib/axios";
-import { axiosInstance } from "../lib/axios";
 import { useNavigate } from 'react-router-dom'; 
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -25,7 +24,6 @@ const ForgotPass = () => {
             if (response.data.userExist) {
                 const otp = Math.floor(100000 + Math.random() * 900000);
                 const expiryTime = Date.now() + 15 * 60 * 1000; // OTP expires in 15 mins
-                await axiosInstance.post('/api/save-otp', { email, otp, expiryTime });
                 await axiosInstance.post('/api/save-otp', { email, otp, expiryTime });
                 const data = {
                     service_id: 'service_6if8ffj',
