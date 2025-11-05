@@ -62,13 +62,16 @@ const attemptSchema = new mongoose.Schema({
   takenAt: { type: Date, default: Date.now },
 
   // ✅ New field for TTL auto-delete
-  expiresAt: { type: Date, default: undefined }
+  expiresAt: { type: Date, default: null }
 }, { timestamps: true });
 
 // ✅ TTL index: document auto-deleted when expiresAt is reached
 attemptSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model("Attempt", attemptSchema);
+
+
+
 
 
 

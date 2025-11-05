@@ -130,8 +130,6 @@ exports.generateSkillQuestions = async (req, res) => {
   }
 };
 
-
-
 exports.randomTestQuestions = async (req, res) => {
   try {
     const { skillId, level } = req.body;
@@ -156,7 +154,7 @@ exports.randomTestQuestions = async (req, res) => {
     // Pick 50 random questions
     const questions = await Question.aggregate([
       { $match: { skill: skillObjectId, level } },
-      { $sample: { size: 5 } }
+      { $sample: { size: 50 } }
     ]);
     if (!questions.length) return res.status(404).json({ message: "No questions found for this skill/level" });
 
@@ -329,7 +327,7 @@ exports.submitTest = async (req, res) => {
 
     // Mark submitted & remove TTL
     attempt.submitted = true;
-    attempt.expiresAt = undefined;
+    attempt.expiresAt = null;
     attempt.takenAt = new Date(); // <-- ensure takenAt exists for consistency badge
     await attempt.save();
 
@@ -363,6 +361,63 @@ exports.submitTest = async (req, res) => {
     res.status(500).json({ message: "Something went wrong while submitting your test", error: err.message });
   }
 };
+
+exports.getTestHistoryBySkill = async (req, res) => {
+  try {
+    const { skillId } = req.params;
+    const userId = req.user._id;
+
+    if (!skillId) {
+      return res.status(400).json({ message: "Skill ID is required" });
+    }
+
+    // Fetch all submitted attempts for this user and skill
+    const attempts = await Attempt.find({ skill: skillId, user: userId, submitted: true })
+      .populate({
+        path: "questions.questionId",
+        select: "question mainTopic subTopic topic options correctAnswer"
+      })
+      .populate({
+        path: "skill",
+        select: "name description"
+      })
+      .sort({ takenAt: -1 }); // latest first
+
+    res.status(200).json({ attempts });
+
+  } catch (err) {
+    console.error("Error fetching test history:", err);
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
+  }
+};
+
+exports.getAttemptById = async (req, res) => {
+  try {
+    const { attemptId } = req.params;
+    // const userId = req.user._id;
+
+    if (!attemptId) {
+      return res.status(400).json({ message: "Attempt ID is required" });
+    }
+
+    // Fetch attempt with questions and selected options
+    const attempt = await Attempt.findOne({ _id: attemptId})
+      .populate({
+        path: 'questions.questionId',
+        select: 'question options correctAnswer topic subTopic',
+      });
+
+    if (!attempt) return res.status(404).json({ message: "Attempt not found" });
+
+    res.status(200).json({ attempt });
+  } catch (err) {
+    console.error("Error fetching attempt:", err);
+    res.status(500).json({ message: "Internal Server Error", error: err.message });
+  }
+};
+
+
+
 
 
 // exports.randomTestQuestions = async (req, res) => {
@@ -516,64 +571,6 @@ exports.submitTest = async (req, res) => {
 //     });
 //   }
 // };
-
-exports.getTestHistoryBySkill = async (req, res) => {
-  try {
-    const { skillId } = req.params;
-    const userId = req.user._id;
-
-    if (!skillId) {
-      return res.status(400).json({ message: "Skill ID is required" });
-    }
-
-    // Fetch all submitted attempts for this user and skill
-    const attempts = await Attempt.find({ skill: skillId, user: userId, submitted: true })
-      .populate({
-        path: "questions.questionId",
-        select: "question mainTopic subTopic topic options correctAnswer"
-      })
-      .populate({
-        path: "skill",
-        select: "name description"
-      })
-      .sort({ takenAt: -1 }); // latest first
-
-    res.status(200).json({ attempts });
-
-  } catch (err) {
-    console.error("Error fetching test history:", err);
-    res.status(500).json({ message: "Internal Server Error", error: err.message });
-  }
-};
-
-exports.getAttemptById = async (req, res) => {
-  try {
-    const { attemptId } = req.params;
-    // const userId = req.user._id;
-
-    if (!attemptId) {
-      return res.status(400).json({ message: "Attempt ID is required" });
-    }
-
-    // Fetch attempt with questions and selected options
-    const attempt = await Attempt.findOne({ _id: attemptId})
-      .populate({
-        path: 'questions.questionId',
-        select: 'question options correctAnswer topic subTopic',
-      });
-
-    if (!attempt) return res.status(404).json({ message: "Attempt not found" });
-
-    res.status(200).json({ attempt });
-  } catch (err) {
-    console.error("Error fetching attempt:", err);
-    res.status(500).json({ message: "Internal Server Error", error: err.message });
-  }
-};
-
-
-
-
 
 
 
