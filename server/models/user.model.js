@@ -52,19 +52,20 @@ const userSchema = mongoose.Schema({
         // correctAnswers: { type: Number, default: 0 },
         // totalQuestions: { type: Number, default: 0 },
         lastUpdated: { type: Date, default: Date.now }}],
-        badges: [{
-        type: String,
-        enum: [
-            'first-test',           // Completed first test
-            'perfect-score',        // Got 100% on any test
-            'skill-master',         // Completed 10 tests in a skill
-            'multi-skill',          // Registered for 3+ skills
-            'consistency',          // Completed 5 tests in a week
-            'improvement',          // Improved score by 20% between tests
-            'expert',               // Got 90%+ on advanced level test
-            'dedicated'             // Completed 25 total tests
-        ]
-        }],
+        badges: {
+            type: [String],
+            enum: [
+                'first-test',
+                'perfect-score',
+                'skill-master',
+                'multi-skill',
+                'consistency',
+                'improvement',
+                'expert',
+                'dedicated'
+            ],
+            default: []
+        },
         badgeHistory: [{
             badge: String,
             earnedAt: { type: Date, default: Date.now }
