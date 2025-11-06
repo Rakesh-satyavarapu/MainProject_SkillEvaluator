@@ -124,7 +124,7 @@ exports.randomTestQuestions = async (req, res) => {
     const skillObj = new mongoose.Types.ObjectId(skillId);
     const questions = await Question.aggregate([
       { $match: { skill: skillObj, level } },
-      { $sample: { size: 10 } }, // adjust number of questions as needed
+      { $sample: { size: 50 } }, // adjust number of questions as needed
     ]);
 
     if (!questions.length)
